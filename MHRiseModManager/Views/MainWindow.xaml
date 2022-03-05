@@ -1,0 +1,86 @@
+﻿<mah:MetroWindow x:Class="MHRiseModManager.MainWindow"
+        xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
+        xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
+        xmlns:local="clr-namespace:MHRiseModManager"
+        xmlns:i="http://schemas.microsoft.com/xaml/behaviors"
+        xmlns:rp="clr-namespace:Reactive.Bindings.Interactivity;assembly=ReactiveProperty.WPF"
+        mc:Ignorable="d"
+        xmlns:mah="clr-namespace:MahApps.Metro.Controls;assembly=MahApps.Metro"
+        xmlns:vm="clr-namespace:MHRiseModManager.ViewModels"
+        xmlns:model="clr-namespace:MHRiseModManager.Models"
+        xmlns:converter="clr-namespace:MHRiseModManager.Views.Converter"
+        xmlns:controls="clr-namespace:MahApps.Metro.Controls;assembly=MahApps.Metro"
+        Title="MHRiseModManager" Height="800" Width="1600">
+    <mah:MetroWindow.DataContext>
+        <vm:MainViewModel/>
+    </mah:MetroWindow.DataContext>
+    <mah:MetroWindow.Resources>
+        <converter:DateTimeConverter x:Key="DateTimeConverter"/>
+    </mah:MetroWindow.Resources>
+    <i:Interaction.Triggers>
+        <i:EventTrigger EventName="Closed">
+            <rp:EventToReactiveCommand Command="{Binding CloseCommand}"/>
+        </i:EventTrigger>
+    </i:Interaction.Triggers>
+    <Grid>
+        <Grid.RowDefinitions>
+            <RowDefinition Height="30"/>
+            <RowDefinition Height="*"/>
+        </Grid.RowDefinitions>
+        <StackPanel Margin="5" Grid.Row="0">
+            <DockPanel>
+                <Label>ゲームフォルダ</Label>
+                <TextBox Text="{Binding GameDirectoryPath.Value}"/>
+            </DockPanel>
+        </StackPanel>
+        <Grid Grid.Row="1">
+            <Grid.ColumnDefinitions>
+                <ColumnDefinition Width="2*"/>
+                <ColumnDefinition Width="1*"/>
+                <ColumnDefinition Width="1*"/>
+            </Grid.ColumnDefinitions>
+            <GroupBox Margin="5" Grid.Column="0" AllowDrop="True" Header="Mod一覧">
+                <DataGrid ItemsSource="{Binding ModInfoList}" AutoGenerateColumns="False" CanUserAddRows="False">
+                    <i:Interaction.Triggers>
+                        <i:EventTrigger EventName="Drop">
+                            <rp:EventToReactiveCommand Command="{Binding FileDropCommand}" />
+                        </i:EventTrigger>
+                    </i:Interaction.Triggers>
+                    <DataGrid.Columns>
+                        <DataGridTextColumn Header="名前" Binding="{Binding Name}"/>
+                        <DataGridTextColumn Header="状態" Binding="{Binding Status}"/>
+                        <DataGridTextColumn Header="ファイルサイズ" Binding="{Binding FileSize}"/>
+                        <DataGridTextColumn Header="作成日時" Binding="{Binding DateCreated, Converter={StaticResource DateTimeConverter}}"/>
+                        <DataGridTextColumn Header="カテゴリ" Binding="{Binding Category}"/>
+                        <DataGridTextColumn Header="URL" Binding="{Binding URL}"/>
+                        <DataGridTemplateColumn Header="Action">
+                            <DataGridTemplateColumn.CellTemplate>
+                                <DataTemplate>
+                                    <Button Content="Act" Command="{Binding SomeCommand}"/>
+                                </DataTemplate>
+                            </DataGridTemplateColumn.CellTemplate>
+                        </DataGridTemplateColumn>
+                    </DataGrid.Columns>
+                </DataGrid>
+            </GroupBox>
+
+            <GroupBox Margin="5" Grid.Column="1" Header="Modファイルツリー">
+                <TreeView x:Name="ModFileTreeView" ItemsSource="{Binding ModFileTree}">
+                    <TreeView.ItemTemplate>
+                        <HierarchicalDataTemplate DataType= "model:ModFileTree" ItemsSource="{Binding Child}">
+                            <TextBlock Text="{Binding Name}"/>
+                        </HierarchicalDataTemplate>
+                    </TreeView.ItemTemplate>
+                    <TreeView.ItemContainerStyle>
+                        <Style TargetType="{x:Type TreeViewItem}">
+                            <Setter Property="IsExpanded" Value="True"/>
+                        </Style>
+                    </TreeView.ItemContainerStyle>
+                </TreeView>
+            </GroupBox>
+        </Grid>
+    </Grid>
+
+</mah:MetroWindow>

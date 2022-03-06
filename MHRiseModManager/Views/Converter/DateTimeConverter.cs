@@ -20,7 +20,7 @@ namespace MHRiseModManager.Views.Converter
         // 文字列をDateTimeに変換
         public object ConvertBack(object value, Type targetType, object parameter, CultureInfo culture)
         {
-            string? strValue = value as string;
+            string strValue = value as string;
             DateTime resultDateTime;
             if (DateTime.TryParse(strValue, out resultDateTime))
             {

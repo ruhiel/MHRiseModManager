@@ -90,10 +90,8 @@ namespace MHRiseModManager.Models
             get => _URL;
             set => SetProperty(ref _URL, value);
         }
-#pragma warning disable CS8618 // null 非許容のフィールドには、コンストラクターの終了時に null 以外の値が入っていなければなりません。Null 許容として宣言することをご検討ください。
         public ModInfo() { }
-#pragma warning restore CS8618 // null 非許容のフィールドには、コンストラクターの終了時に null 以外の値が入っていなければなりません。Null 許容として宣言することをご検討ください。
-        
+     
         public string ExtractArchivePath
         {
             get
@@ -116,9 +114,7 @@ namespace MHRiseModManager.Models
 
         private MainViewModel _MainViewModel;
 
-#pragma warning disable CS8618 // null 非許容のフィールドには、コンストラクターの終了時に null 以外の値が入っていなければなりません。Null 許容として宣言することをご検討ください。
-        public ModInfo(int id, string name, Status status, long fileSize, DateTime dateCreated, string archiveFilePath, string url, MainViewModel mainViewModel)
-#pragma warning restore CS8618 // null 非許容のフィールドには、コンストラクターの終了時に null 以外の値が入っていなければなりません。Null 許容として宣言することをご検討ください。
+        public ModInfo(int id, string name, Status status, long fileSize, DateTime dateCreated, string archiveFilePath, string url, MainViewModel mainViewModel = null)
         {
             Id = id;
             Name = name;

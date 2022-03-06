@@ -43,7 +43,7 @@ namespace MHRiseModManager.Models
         {
             var dt = dateCreated ?? DateTime.Now;
 
-            var mod = new ModInfo(id: 1, name: name, status: status, fileSize: fileSize, dateCreated: dt, archiveFilePath: archiveFilePath, url: url, mainViewModel:null);
+            var mod = new ModInfo(id: 1, name: name, status: status, fileSize: fileSize, dateCreated: dt, archiveFilePath: archiveFilePath, url: url);
 
             // コネクションを開いてテーブル作成して閉じる  
             using (var con = new SQLiteConnection($"Data Source={Settings.Default.DataBaseFileName}"))

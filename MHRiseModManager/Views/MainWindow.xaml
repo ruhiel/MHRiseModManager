@@ -12,7 +12,10 @@
         xmlns:model="clr-namespace:MHRiseModManager.Models"
         xmlns:converter="clr-namespace:MHRiseModManager.Views.Converter"
         xmlns:controls="clr-namespace:MahApps.Metro.Controls;assembly=MahApps.Metro"
-        Title="MHRiseModManager" Height="800" Width="1600">
+        Title="MHRiseModManager"
+        TitleCharacterCasing="Normal"
+        Height="800"
+        Width="1600">
     <mah:MetroWindow.DataContext>
         <vm:MainViewModel/>
     </mah:MetroWindow.DataContext>
@@ -42,7 +45,7 @@
                 <ColumnDefinition Width="1*"/>
             </Grid.ColumnDefinitions>
             <GroupBox Margin="5" Grid.Column="0" AllowDrop="True" Header="Mod一覧">
-                <DataGrid ItemsSource="{Binding ModInfoList}" AutoGenerateColumns="False" CanUserAddRows="False">
+                <DataGrid ItemsSource="{Binding ModInfoList}" AutoGenerateColumns="False" CanUserAddRows="False" IsReadOnly="True">
                     <i:Interaction.Triggers>
                         <i:EventTrigger EventName="Drop">
                             <rp:EventToReactiveCommand Command="{Binding FileDropCommand}" />
@@ -84,6 +87,30 @@
                         </Style>
                     </TreeView.ItemContainerStyle>
                 </TreeView>
+            </GroupBox>
+            <GroupBox Margin="5" Grid.Column="2" Header="Mod情報">
+                <Grid>
+                    <Grid.ColumnDefinitions>
+                        <ColumnDefinition />
+                        <ColumnDefinition />
+                    </Grid.ColumnDefinitions>
+                    <Grid.RowDefinitions>
+                        <RowDefinition Height="5*"/>
+                        <RowDefinition Height="1*"/>
+                    </Grid.RowDefinitions>
+                    <StackPanel Grid.Row="0" Grid.Column="0" Grid.ColumnSpan="2">
+                        <WrapPanel>
+                            <TextBlock Text="パス：" Margin="0,0,5,0"/>
+                            <TextBlock Text="{Binding NowModPath.Value}"/>
+                        </WrapPanel>
+                        <WrapPanel>
+                            <TextBlock Text="ファイルサイズ：" Margin="0,0,5,0"/>
+                            <TextBlock Text="{Binding NowModSize.Value}"/>
+                        </WrapPanel>                        
+                    </StackPanel>
+                    <Button Grid.Row="1" Grid.Column="0" Content="インストール" IsEnabled="{Binding Installable.Value}"/>
+                    <Button Grid.Row="1" Grid.Column="1" Content="アンインストール" IsEnabled="{Binding Unstallable.Value}"/>
+                </Grid>
             </GroupBox>
         </Grid>
     </Grid>

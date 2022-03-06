@@ -58,7 +58,21 @@ namespace MHRiseModManager.Models
         {
             get
             {
-                _Category = (int)(GetAllTree().Any(x => x.Name.EndsWith("pak")) ? Category.Pak : Category.Lua);
+                _Category = (int)Category.その他;
+                foreach (var item in GetAllTree())
+                {
+                    if(item.Name.EndsWith("lua"))
+                    {
+                        _Category = (int)Category.Lua;
+                        break;
+                    }
+                    else if (item.Name.EndsWith("pak"))
+                    {
+                        _Category = (int)Category.Pak;
+                        break;
+                    }
+                }
+
                 return (Category)_Category;
             }
         }
@@ -123,8 +137,20 @@ namespace MHRiseModManager.Models
         }
 
         public List<ModFileTree> GetFileTree() => Search(ExtractArchivePath);
-
-        public IEnumerable<ModFileTree> GetAllTree() => GetFileTree().SelectMany(x => x.Child);
+        public IEnumerable<ModFileTree> GetAllTree() => GetElements(GetFileTree().First());
+        private IEnumerable<ModFileTree> GetElements(ModFileTree node)
+        {
+            yield return node; // とりあえず自分を返す
+            if (!node.HasChild) yield break; // 子ノードがなければ抜ける
+            foreach (var child in node.Child)
+            {
+                var subElements = GetElements(child); // 再帰呼び出し
+                foreach (var subElement in subElements)
+                {
+                    yield return subElement; // 子ノードと含まれる要素を返す
+                }
+            }
+        }
 
         private List<ModFileTree> Search(string path)
         {
@@ -134,6 +160,7 @@ namespace MHRiseModManager.Models
             {
                 ModFileTree tree = new ModFileTree();
                 tree.Name = f.Name;
+                tree.Path = f.FullName.Substring(ExtractArchivePath.Length + 1);
                 chiled.Add(tree);
             }
 
@@ -141,6 +168,7 @@ namespace MHRiseModManager.Models
             {
                 ModFileTree tree = new ModFileTree();
                 tree.Name = d.Name;
+                tree.Path = d.FullName.Substring(ExtractArchivePath.Length + 1);
                 tree.Child = Search(d.FullName);
                 chiled.Add(tree);
             }

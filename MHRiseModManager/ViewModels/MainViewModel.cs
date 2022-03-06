@@ -24,6 +24,14 @@ namespace MHRiseModManager.ViewModels
         public ObservableCollection<ModFileTree> ModFileTree { get; set; } = new ObservableCollection<ModFileTree>();
 
         public ReactiveProperty<string> GameDirectoryPath { get; } = new ReactiveProperty<string>(Settings.Default.GameDirectoryPath);
+
+        public ReactiveProperty<string> NowModPath { get; } = new ReactiveProperty<string>();
+        public ReactiveProperty<string> NowModSize { get; } = new ReactiveProperty<string>();
+
+        public ReactiveProperty<bool> Installable { get; } = new ReactiveProperty<bool>();
+
+        public ReactiveProperty<bool> Unstallable { get; } = new ReactiveProperty<bool>();
+
         public ReactiveCommand<DragEventArgs> FileDropCommand { get; private set; }
 
         public ReactiveCommand<(object sender, EventArgs args)> SelectionChanged { get; private set;} = new ReactiveCommand<(object sender, EventArgs args)>();
@@ -48,15 +56,26 @@ namespace MHRiseModManager.ViewModels
 
                 var modInfo = (ModInfo)datagrid.SelectedItem;
 
-                var archive = modInfo.ExtractArchivePath;
-
-                ModFileTree.Clear();
-
-                foreach (var item in modInfo.GetFileTree())
+                if(modInfo != null)
                 {
-                    ModFileTree.Add(item);
+                    var archive = modInfo.ExtractArchivePath;
+
+                    NowModPath.Value = modInfo.Name;
+
+                    NowModSize.Value = modInfo.FileSize.ToString();
+
+                    Installable.Value = modInfo.Status == Status.未インストール;
+
+                    Unstallable.Value = modInfo.Status == Status.インストール済;
+
+                    ModFileTree.Clear();
+
+                    foreach (var item in modInfo.GetFileTree())
+                    {
+                        ModFileTree.Add(item);
+                    }
                 }
-               
+
             });
 
 
@@ -66,9 +85,6 @@ namespace MHRiseModManager.ViewModels
 
                 Settings.Default.GameDirectoryPath = GameDirectoryPath.Value;
                 Settings.Default.Save();
-
-
-
 
                 Disposable.Dispose();
 
@@ -117,7 +133,7 @@ namespace MHRiseModManager.ViewModels
             var targetFileName = Path.GetFileName(dropFile);
             var targetFile = Path.Combine(cacheDir, targetFileName);
 
-            File.Copy(dropFile, targetFile);
+            File.Copy(dropFile, targetFile, true);
 
             _ModListManager.Insert(name: targetFileName, fileSize: new FileInfo(targetFile).Length, archiveFilePath: targetFile, url:"https://");
 
@@ -132,11 +148,21 @@ namespace MHRiseModManager.ViewModels
             {
                 ModInfoList.Add(new ModInfo(x.Id, x.Name, x.Status, x.FileSize, x.DateCreated, x.ArchiveFilePath, x.URL, this));
             });
+
+            NowModPath.Value = string.Empty;
+
+            NowModSize.Value = string.Empty;
+
+            Installable.Value = false;
+
+            Unstallable.Value = false;
+
+            ModFileTree.Clear();
         }
 
         public void OnRowUpdate(ModInfo modInfo)
         {
-            // Modの更新
+            // TODO: MODの更新
         }
     }
 }

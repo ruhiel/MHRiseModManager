@@ -9,6 +9,7 @@ namespace MHRiseModManager.Models
     public enum Category : int
     {
         Pak = 0,
-        Lua = 1
+        Lua = 1,
+        その他 = 2
     }
 }

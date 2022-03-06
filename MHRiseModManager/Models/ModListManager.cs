@@ -32,6 +32,18 @@ namespace MHRiseModManager.Models
                         "url TEXT NOT NULL)";
 
                         command.ExecuteNonQuery();
+
+
+                    }
+                    using (SQLiteCommand command = con.CreateCommand())
+                    {
+                        command.CommandText = "CREATE TABLE IF NOT EXISTS modinfodetail(" +
+                            "id INTEGER PRIMARY KEY AUTOINCREMENT," +
+                            "modinfoid INTEGER NOT NULL," +
+                            "path TEXT NOT NULL," +
+                            "delflg INTEGER NOT NULL)";
+
+                        command.ExecuteNonQuery();
                     }
                     con.Close();
                 }
@@ -74,6 +86,27 @@ namespace MHRiseModManager.Models
             }
 
             return list;
+        }
+
+        public void Install(int id, IEnumerable<string> files)
+        {
+            // コネクションを開いてテーブル作成して閉じる  
+            using (var con = new SQLiteConnection($"Data Source={Settings.Default.DataBaseFileName}"))
+            {
+                con.Open();
+                string sql = $"update modinfo set status = {(int)Status.インストール済} where id = {id}";
+                SQLiteCommand com = new SQLiteCommand(sql, con);
+                com.ExecuteNonQuery();
+
+                foreach(var file in files)
+                {
+                    sql = $"insert into modinfodetail (modinfoid, path, delflg) values ({id}, '{file}', 0)";
+                    com = new SQLiteCommand(sql, con);
+                    com.ExecuteNonQuery();
+                }
+
+                con.Close();
+            }
         }
     }
 }

@@ -57,12 +57,12 @@
                         </i:EventTrigger>
                     </i:Interaction.Triggers>
                     <DataGrid.Columns>
-                        <DataGridTextColumn Header="名前" Binding="{Binding Name}"/>
-                        <DataGridTextColumn Header="状態" Binding="{Binding Status}"/>
-                        <DataGridTextColumn Header="ファイルサイズ" Binding="{Binding FileSize}"/>
-                        <DataGridTextColumn Header="作成日時" Binding="{Binding DateCreated, Converter={StaticResource DateTimeConverter}}"/>
-                        <DataGridTextColumn Header="カテゴリ" Binding="{Binding Category}"/>
-                        <DataGridTextColumn Header="URL" Binding="{Binding URL}"/>
+                        <DataGridTextColumn Header="名前" Binding="{Binding Name}" Width="2*"/>
+                        <DataGridTextColumn Header="状態" Binding="{Binding Status}" Width="*"/>
+                        <DataGridTextColumn Header="ファイルサイズ" Binding="{Binding FileSize}" Width="*"/>
+                        <DataGridTextColumn Header="作成日時" Binding="{Binding DateCreated, Converter={StaticResource DateTimeConverter}}" Width="1.2*"/>
+                        <DataGridTextColumn Header="カテゴリ" Binding="{Binding Category}" Width="*"/>
+                        <DataGridTextColumn Header="URL" Binding="{Binding URL}" Width="*"/>
                         <DataGridTemplateColumn Header="Mod更新">
                             <DataGridTemplateColumn.CellTemplate>
                                 <DataTemplate>
@@ -108,8 +108,8 @@
                             <TextBlock Text="{Binding NowModSize.Value}"/>
                         </WrapPanel>                        
                     </StackPanel>
-                    <Button Grid.Row="1" Grid.Column="0" Content="インストール" IsEnabled="{Binding Installable.Value}"/>
-                    <Button Grid.Row="1" Grid.Column="1" Content="アンインストール" IsEnabled="{Binding Unstallable.Value}"/>
+                    <Button Margin ="5" Grid.Row="1" Grid.Column="0" Content="インストール" IsEnabled="{Binding Installable.Value}" Command="{Binding InstallCommand}"/>
+                    <Button Margin ="5" Grid.Row="1" Grid.Column="1" Content="アンインストール" IsEnabled="{Binding Unstallable.Value}" Command="{Binding UnstallCommand}"/>
                 </Grid>
             </GroupBox>
         </Grid>

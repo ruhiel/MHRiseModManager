@@ -20,6 +20,9 @@ namespace MHRiseModManager.ViewModels
     {
         private CompositeDisposable Disposable { get; } = new CompositeDisposable();
         public ReactiveCommand CloseCommand { get; } = new ReactiveCommand();
+        public ReactiveCommand InstallCommand { get; } = new ReactiveCommand();
+
+        public ReactiveCommand UnstallCommand { get; } = new ReactiveCommand();
 
         public ObservableCollection<ModFileTree> ModFileTree { get; set; } = new ObservableCollection<ModFileTree>();
 
@@ -37,6 +40,8 @@ namespace MHRiseModManager.ViewModels
         public ReactiveCommand<(object sender, EventArgs args)> SelectionChanged { get; private set;} = new ReactiveCommand<(object sender, EventArgs args)>();
 
         private ModListManager _ModListManager = new ModListManager();
+
+        private ModInfo _NowSelectModInfo;
 
         public ObservableCollection<ModInfo> ModInfoList { get; set; } = new ObservableCollection<ModInfo>();
         public MainViewModel()
@@ -58,6 +63,8 @@ namespace MHRiseModManager.ViewModels
 
                 if(modInfo != null)
                 {
+                    _NowSelectModInfo = modInfo;
+
                     var archive = modInfo.ExtractArchivePath;
 
                     NowModPath.Value = modInfo.Name;
@@ -78,6 +85,35 @@ namespace MHRiseModManager.ViewModels
 
             });
 
+
+            InstallCommand.Subscribe(e =>
+            {
+                var files = new List<string>();
+
+                foreach(var item in _NowSelectModInfo.GetAllTree().Where(x => x.IsFile))
+                {
+                    var dir = Path.GetDirectoryName(item.Path);
+
+                    var targetDir = Path.Combine(Settings.Default.GameDirectoryPath, dir);
+
+                    if (!Directory.Exists(targetDir))
+                    {
+                        Directory.CreateDirectory(targetDir);
+                    }
+
+                    var srcFile = Path.Combine(_NowSelectModInfo.ExtractArchivePath, item.Path);
+
+                    var targetFile = Path.Combine(Settings.Default.GameDirectoryPath, item.Path);
+
+                    File.Copy(srcFile, targetFile, true);
+
+                    files.Add(item.Path);
+                }
+
+                _ModListManager.Install(_NowSelectModInfo.Id, files);
+
+                ModFileListReflesh();
+            });
 
             CloseCommand.Subscribe(e =>
             {

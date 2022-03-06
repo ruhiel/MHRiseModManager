@@ -133,7 +133,27 @@ namespace MHRiseModManager.Models
         }
 
         public List<ModFileTree> GetFileTree() => Search(ExtractArchivePath);
-        public IEnumerable<ModFileTree> GetAllTree() => GetElements(GetFileTree().First());
+        public IEnumerable<ModFileTree> GetAllTree()
+        {
+            foreach(var item in GetFileTree())
+            {
+                if(item.IsFile)
+                {
+                    yield return item;
+                }
+                else
+                {
+                    foreach (var child in item.Child)
+                    {
+                        var subElements = GetElements(child); // 再帰呼び出し
+                        foreach (var subElement in subElements)
+                        {
+                            yield return subElement; // 子ノードと含まれる要素を返す
+                        }
+                    }
+                }
+            }
+        }
         private IEnumerable<ModFileTree> GetElements(ModFileTree node)
         {
             yield return node; // とりあえず自分を返す
@@ -157,6 +177,7 @@ namespace MHRiseModManager.Models
                 ModFileTree tree = new ModFileTree();
                 tree.Name = f.Name;
                 tree.Path = f.FullName.Substring(ExtractArchivePath.Length + 1);
+                tree.IsFile = true;
                 chiled.Add(tree);
             }
 
@@ -166,6 +187,7 @@ namespace MHRiseModManager.Models
                 tree.Name = d.Name;
                 tree.Path = d.FullName.Substring(ExtractArchivePath.Length + 1);
                 tree.Child = Search(d.FullName);
+                tree.IsFile = false;
                 chiled.Add(tree);
             }
 

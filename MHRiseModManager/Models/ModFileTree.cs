@@ -9,9 +9,10 @@ namespace MHRiseModManager.Models
     public class ModFileTree
     {
         public string Name { get; set; }
-
         public string Path { get; set; }
         public List<ModFileTree> Child { get; set; }
         public bool HasChild => Child != null && Child.Any();
+
+        public bool IsFile { get; set; }
     }
 }

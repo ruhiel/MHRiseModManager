@@ -11,5 +11,8 @@
     <Setting Name="ModsCacheDirectoryName" Type="System.String" Scope="User">
       <Value Profile="(Default)">ModsCache</Value>
     </Setting>
+    <Setting Name="TempDirectoryName" Type="System.String" Scope="User">
+      <Value Profile="(Default)">MHRiseModManager</Value>
+    </Setting>
   </Settings>
 </SettingsFile>

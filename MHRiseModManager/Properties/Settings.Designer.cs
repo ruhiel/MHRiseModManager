@@ -58,5 +58,17 @@ namespace MHRiseModManager.Properties {
                 this["ModsCacheDirectoryName"] = value;
             }
         }
+        
+        [global::System.Configuration.UserScopedSettingAttribute()]
+        [global::System.Diagnostics.DebuggerNonUserCodeAttribute()]
+        [global::System.Configuration.DefaultSettingValueAttribute("MHRiseModManager")]
+        public string TempDirectoryName {
+            get {
+                return ((string)(this["TempDirectoryName"]));
+            }
+            set {
+                this["TempDirectoryName"] = value;
+            }
+        }
     }
 }

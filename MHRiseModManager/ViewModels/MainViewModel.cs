@@ -119,6 +119,8 @@ namespace MHRiseModManager.ViewModels
             {
                 CleanCache();
 
+                CleanTemp();
+
                 Settings.Default.GameDirectoryPath = GameDirectoryPath.Value;
                 Settings.Default.Save();
 
@@ -128,6 +130,21 @@ namespace MHRiseModManager.ViewModels
 
             ModFileListReflesh();
 
+        }
+
+        private void CleanTemp()
+        {
+            var tempDir = Path.Combine(Path.GetTempPath(), Settings.Default.TempDirectoryName);
+            var di = new DirectoryInfo(tempDir);
+            foreach (var f in di.GetFiles())
+            {
+                f.Delete();
+            }
+
+            foreach (var d in di.GetDirectories())
+            {
+                d.Delete(true);
+            }
         }
 
         private static void CleanCache()
@@ -157,6 +174,9 @@ namespace MHRiseModManager.ViewModels
             }
 
             var dropFile = dropFiles[0];
+            string imagefile = null;
+
+            (dropFile, imagefile) = PreProcess(dropFile);
 
             var dir = Environment.CurrentDirectory;
             var cacheDir = Path.Combine(dir, Settings.Default.ModsCacheDirectoryName);
@@ -174,6 +194,62 @@ namespace MHRiseModManager.ViewModels
             _ModListManager.Insert(name: targetFileName, fileSize: new FileInfo(targetFile).Length, archiveFilePath: targetFile, url:"https://");
 
             ModFileListReflesh();
+        }
+
+        private (string, string) PreProcess(string dropFile)
+        {
+            var resultFile = dropFile;
+
+            var tempDir = Path.Combine(Path.GetTempPath(), Settings.Default.TempDirectoryName);
+            if (!Directory.Exists(tempDir))
+            {
+                Directory.CreateDirectory(tempDir);
+            }
+
+            var targetFile = Path.Combine(tempDir, Path.GetFileName(dropFile));
+            File.Copy(dropFile, targetFile, true);
+            var mod = new ModInfo(id: 1, name: "", status: Status.未インストール, fileSize: new FileInfo(targetFile).Length, dateCreated: DateTime.Now, archiveFilePath: targetFile, url: "");
+
+
+            if(mod.Category == Category.Lua && !mod.GetFileTree().Any(x => !x.IsFile && x.Name == "reframework"))
+            {
+                var tempFileName = Path.GetRandomFileName();
+                // Luaかつreframeworkがない
+                var reframeworkDir = Path.Combine(tempDir, tempFileName, "reframework");
+                Directory.CreateDirectory(reframeworkDir);
+
+                var srcDir = Path.Combine(tempDir, Path.GetFileNameWithoutExtension(dropFile));
+
+                var di = new DirectoryInfo(srcDir);
+
+                if(di.GetFiles().Any())
+                {
+                    foreach (var f in di.GetFiles())
+                    {
+                        File.Move(f.FullName, Path.Combine(reframeworkDir, Path.GetFileName(f.FullName)));
+                    }
+                }
+
+                if(di.GetDirectories().Any())
+                {
+                    foreach (var d in di.GetDirectories())
+                    {
+                        Directory.Move(d.FullName, Path.Combine(reframeworkDir, d.Name));
+                    }
+                }
+                SevenZipBase.SetLibraryPath("7z.dll");
+
+                File.Delete(targetFile);
+
+                var compressor = new SevenZipCompressor();
+                resultFile = Path.Combine(Path.GetDirectoryName(targetFile), $"{Path.GetFileNameWithoutExtension(targetFile)}.7z");
+                
+                compressor.CompressDirectory(Path.Combine(tempDir, tempFileName), resultFile);
+
+                Directory.Delete(Path.Combine(tempDir, tempFileName), true);
+            }
+
+            return (resultFile, string.Empty);
         }
 
         private void ModFileListReflesh()

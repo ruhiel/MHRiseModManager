@@ -47,6 +47,11 @@
                         <i:EventTrigger EventName="Drop">
                             <rp:EventToReactiveCommand Command="{Binding FileDropCommand}" />
                         </i:EventTrigger>
+                        <i:EventTrigger EventName="SelectionChanged">
+                            <rp:EventToReactiveCommand Command="{Binding SelectionChanged}" >
+                                <converter:WithSenderConverter />
+                            </rp:EventToReactiveCommand>
+                        </i:EventTrigger>
                     </i:Interaction.Triggers>
                     <DataGrid.Columns>
                         <DataGridTextColumn Header="名前" Binding="{Binding Name}"/>
@@ -55,10 +60,10 @@
                         <DataGridTextColumn Header="作成日時" Binding="{Binding DateCreated, Converter={StaticResource DateTimeConverter}}"/>
                         <DataGridTextColumn Header="カテゴリ" Binding="{Binding Category}"/>
                         <DataGridTextColumn Header="URL" Binding="{Binding URL}"/>
-                        <DataGridTemplateColumn Header="Action">
+                        <DataGridTemplateColumn Header="Mod更新">
                             <DataGridTemplateColumn.CellTemplate>
                                 <DataTemplate>
-                                    <Button Content="Act" Command="{Binding SomeCommand}"/>
+                                    <Button Content="更新" Command="{Binding SomeCommand}"/>
                                 </DataTemplate>
                             </DataGridTemplateColumn.CellTemplate>
                         </DataGridTemplateColumn>

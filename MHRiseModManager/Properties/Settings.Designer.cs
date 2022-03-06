@@ -46,5 +46,17 @@ namespace MHRiseModManager.Properties {
                 this["DataBaseFileName"] = value;
             }
         }
+        
+        [global::System.Configuration.UserScopedSettingAttribute()]
+        [global::System.Diagnostics.DebuggerNonUserCodeAttribute()]
+        [global::System.Configuration.DefaultSettingValueAttribute("ModsCache")]
+        public string ModsCacheDirectoryName {
+            get {
+                return ((string)(this["ModsCacheDirectoryName"]));
+            }
+            set {
+                this["ModsCacheDirectoryName"] = value;
+            }
+        }
     }
 }

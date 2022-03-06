@@ -8,6 +8,8 @@ using System.Data.Linq.Mapping;
 using Reactive.Bindings;
 using System.Windows;
 using MHRiseModManager.ViewModels;
+using System.IO;
+using SevenZip;
 
 namespace MHRiseModManager.Models
 {
@@ -37,8 +39,8 @@ namespace MHRiseModManager.Models
             set => SetProperty(ref _Status, (int)value);
         }
         [Column(Name = "filesize", CanBeNull = false, DbType = "INT")]
-        private int _Filesize;
-        public int FileSize
+        private long _Filesize;
+        public long FileSize
         {
             get => _Filesize;
             set => SetProperty(ref _Filesize, value);
@@ -54,8 +56,11 @@ namespace MHRiseModManager.Models
         private int _Category;
         public Category Category
         {
-            get => (Category)_Category;
-            set => SetProperty(ref _Category, (int)value);
+            get
+            {
+                _Category = (int)(GetAllTree().Any(x => x.Name.EndsWith("pak")) ? Category.Pak : Category.Lua);
+                return (Category)_Category;
+            }
         }
         [Column(Name = "archivefilepath", CanBeNull = false, DbType = "TEXT")]
         private string _ArchiveFilePath;
@@ -75,19 +80,37 @@ namespace MHRiseModManager.Models
         public ModInfo() { }
 #pragma warning restore CS8618 // null 非許容のフィールドには、コンストラクターの終了時に null 以外の値が入っていなければなりません。Null 許容として宣言することをご検討ください。
         
+        public string ExtractArchivePath
+        {
+            get
+            {
+                var targetDir = Path.Combine(Path.GetDirectoryName(ArchiveFilePath), Path.GetFileNameWithoutExtension(ArchiveFilePath));
+
+                if (!Directory.Exists(targetDir))
+                {
+                    Directory.CreateDirectory(targetDir);
+                    SevenZipBase.SetLibraryPath("7z.dll");
+
+                    var extractor = new SevenZipExtractor(ArchiveFilePath);
+                    extractor.ExtractArchive(targetDir);
+                }
+                return targetDir;
+            }
+        }
 
         public ReactiveCommand<EventArgs> SomeCommand { get; set; } = new ReactiveCommand<EventArgs>();
 
         private MainViewModel _MainViewModel;
 
-        public ModInfo(int id, string name, Status status, int fileSize, DateTime dateCreated, Category category, string archiveFilePath, string url, MainViewModel mainViewModel)
+#pragma warning disable CS8618 // null 非許容のフィールドには、コンストラクターの終了時に null 以外の値が入っていなければなりません。Null 許容として宣言することをご検討ください。
+        public ModInfo(int id, string name, Status status, long fileSize, DateTime dateCreated, string archiveFilePath, string url, MainViewModel mainViewModel)
+#pragma warning restore CS8618 // null 非許容のフィールドには、コンストラクターの終了時に null 以外の値が入っていなければなりません。Null 許容として宣言することをご検討ください。
         {
             Id = id;
             Name = name;
             Status = status;
             FileSize = fileSize;
             DateCreated = dateCreated;
-            Category = category;
             ArchiveFilePath = archiveFilePath;
             URL = url;
             _MainViewModel = mainViewModel;
@@ -98,5 +121,33 @@ namespace MHRiseModManager.Models
             });
 
         }
+
+        public List<ModFileTree> GetFileTree() => Search(ExtractArchivePath);
+
+        public IEnumerable<ModFileTree> GetAllTree() => GetFileTree().SelectMany(x => x.Child);
+
+        private List<ModFileTree> Search(string path)
+        {
+            var chiled = new List<ModFileTree>();
+            var di = new DirectoryInfo(path);
+            foreach (var f in di.GetFiles())
+            {
+                ModFileTree tree = new ModFileTree();
+                tree.Name = f.Name;
+                chiled.Add(tree);
+            }
+
+            foreach (var d in di.GetDirectories())
+            {
+                ModFileTree tree = new ModFileTree();
+                tree.Name = d.Name;
+                tree.Child = Search(d.FullName);
+                chiled.Add(tree);
+            }
+
+            return chiled;
+        }
+
+
     }
 }

@@ -13,6 +13,7 @@
     <PackageReference Include="MahApps.Metro" Version="2.4.9" />
     <PackageReference Include="ReactiveProperty" Version="8.0.3" />
     <PackageReference Include="ReactiveProperty.WPF" Version="8.0.3" />
+    <PackageReference Include="SevenZipSharp.Net45" Version="1.0.19" />
     <PackageReference Include="System.Data.SQLite.Core" Version="1.0.115.5" />
   </ItemGroup>
 
@@ -34,5 +35,9 @@
       <LastGenOutput>Settings.Designer.cs</LastGenOutput>
     </None>
   </ItemGroup>
+
+  <Target Name="PostBuild" AfterTargets="PostBuildEvent">
+    <Exec Command="xcopy &quot;C:\Program Files\7-Zip\7z.dll&quot; $(TargetDir) /Y" />
+  </Target>
 
 </Project>

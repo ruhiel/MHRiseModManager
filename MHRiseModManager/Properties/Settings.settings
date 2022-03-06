@@ -8,5 +8,8 @@
     <Setting Name="DataBaseFileName" Type="System.String" Scope="User">
       <Value Profile="(Default)">MHRiseModManager.db</Value>
     </Setting>
+    <Setting Name="ModsCacheDirectoryName" Type="System.String" Scope="User">
+      <Value Profile="(Default)">ModsCache</Value>
+    </Setting>
   </Settings>
 </SettingsFile>

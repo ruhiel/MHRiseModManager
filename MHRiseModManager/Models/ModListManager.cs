@@ -39,15 +39,17 @@ namespace MHRiseModManager.Models
 
         }
 
-        public void Insert(string name, long fileSize, Category category, string archiveFilePath, string url, DateTime? dateCreated = null, Status status = Status.未インストール)
+        public void Insert(string name, long fileSize, string archiveFilePath, string url, DateTime? dateCreated = null, Status status = Status.未インストール)
         {
             var dt = dateCreated ?? DateTime.Now;
+
+            var mod = new ModInfo(id: 1, name: name, status: status, fileSize: fileSize, dateCreated: dt, archiveFilePath: archiveFilePath, url: url, mainViewModel:null);
 
             // コネクションを開いてテーブル作成して閉じる  
             using (var con = new SQLiteConnection($"Data Source={Settings.Default.DataBaseFileName}"))
             {
                 con.Open();
-                string sql = $"insert into modinfo (name, status, filesize, datecreated, category, archivefilepath, url) values ('{name}', {(int)status}, {fileSize}, '{dt.ToString("yyyy-MM-dd HH:mm:ss")}', {(int)category}, '{archiveFilePath}', '{url}');";
+                string sql = $"insert into modinfo (name, status, filesize, datecreated, category, archivefilepath, url) values ('{name}', {(int)status}, {fileSize}, '{dt.ToString("yyyy-MM-dd HH:mm:ss")}', {(int)mod.Category}, '{archiveFilePath}', '{url}');";
                 SQLiteCommand com = new SQLiteCommand(sql, con);
                 com.ExecuteNonQuery();
 
@@ -59,7 +61,7 @@ namespace MHRiseModManager.Models
 
         public List<ModInfo> SelectAll()
         {
-            List<ModInfo> list = null;
+            List<ModInfo> list;
             using (var con = new SQLiteConnection($"Data Source={Settings.Default.DataBaseFileName}"))
             {
                 con.Open();

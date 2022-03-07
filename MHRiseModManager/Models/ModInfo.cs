@@ -10,6 +10,7 @@ using System.Windows;
 using MHRiseModManager.ViewModels;
 using System.IO;
 using SevenZip;
+using MHRiseModManager.Utils;
 
 namespace MHRiseModManager.Models
 {
@@ -56,25 +57,8 @@ namespace MHRiseModManager.Models
         private int _Category;
         public Category Category
         {
-            get
-            {
-                _Category = (int)Category.その他;
-                foreach (var item in GetAllTree())
-                {
-                    if(item.Name.EndsWith("lua"))
-                    {
-                        _Category = (int)Category.Lua;
-                        break;
-                    }
-                    else if (item.Name.EndsWith("pak"))
-                    {
-                        _Category = (int)Category.Pak;
-                        break;
-                    }
-                }
-
-                return (Category)_Category;
-            }
+            get => (Category)_Category;
+            set => SetProperty(ref _Category, (int)value);
         }
         [Column(Name = "archivefilepath", CanBeNull = false, DbType = "TEXT")]
         private string _ArchiveFilePath;
@@ -90,8 +74,15 @@ namespace MHRiseModManager.Models
             get => _URL;
             set => SetProperty(ref _URL, value);
         }
+        [Column(Name = "imagefilepath", CanBeNull = true, DbType = "TEXT")]
+        private string _ImageFilePath;
+        public string ImageFilePath
+        {
+            get => _ImageFilePath;
+            set => SetProperty(ref _ImageFilePath, value);
+        }
         public ModInfo() { }
-     
+
         public string ExtractArchivePath
         {
             get
@@ -101,28 +92,48 @@ namespace MHRiseModManager.Models
                 if (!Directory.Exists(targetDir))
                 {
                     Directory.CreateDirectory(targetDir);
-                    SevenZipBase.SetLibraryPath("7z.dll");
 
-                    var extractor = new SevenZipExtractor(ArchiveFilePath);
-                    extractor.ExtractArchive(targetDir);
+                    Utility.ExtractFile(ArchiveFilePath, targetDir);
                 }
                 return targetDir;
             }
+        }
+
+        public Category GetNewCategory()
+        {
+            var category = Category.その他;
+            foreach (var item in GetAllTree())
+            {
+                if (item.Name.EndsWith("lua"))
+                {
+                    category = Category.Lua;
+                    break;
+                }
+                else if (item.Name.EndsWith("pak"))
+                {
+                    category = Category.Pak;
+                    break;
+                }
+            }
+
+            return category;
         }
 
         public ReactiveCommand<EventArgs> SomeCommand { get; set; } = new ReactiveCommand<EventArgs>();
 
         private MainViewModel _MainViewModel;
 
-        public ModInfo(int id, string name, Status status, long fileSize, DateTime dateCreated, string archiveFilePath, string url, MainViewModel mainViewModel = null)
+        public ModInfo(int id, string name, Status status, long fileSize, DateTime dateCreated, Category category, string archiveFilePath, string url, string imageFilePath = null, MainViewModel mainViewModel = null)
         {
             Id = id;
             Name = name;
             Status = status;
             FileSize = fileSize;
             DateCreated = dateCreated;
+            Category = category;
             ArchiveFilePath = archiveFilePath;
             URL = url;
+            ImageFilePath = imageFilePath;
             _MainViewModel = mainViewModel;
 
             SomeCommand.Subscribe(_ =>

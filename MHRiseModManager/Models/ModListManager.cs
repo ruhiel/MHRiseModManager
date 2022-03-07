@@ -29,6 +29,7 @@ namespace MHRiseModManager.Models
                         "datecreated TEXT NOT NULL," +
                         "category INTEGER NOT NULL," +
                         "archivefilepath TEXT NOT NULL," +
+                        "imagefilepath TEXT," +
                         "url TEXT NOT NULL)";
 
                         command.ExecuteNonQuery();
@@ -51,23 +52,22 @@ namespace MHRiseModManager.Models
 
         }
 
-        public void Insert(string name, long fileSize, string archiveFilePath, string url, DateTime? dateCreated = null, Status status = Status.未インストール)
+        public void Insert(string name, long fileSize, string archiveFilePath, string url, string imagefilepath = null, DateTime? dateCreated = null, Status status = Status.未インストール)
         {
             var dt = dateCreated ?? DateTime.Now;
-
-            var mod = new ModInfo(id: 1, name: name, status: status, fileSize: fileSize, dateCreated: dt, archiveFilePath: archiveFilePath, url: url);
+            
+            var mod = new ModInfo(id: 1, name: name, status: status, fileSize: fileSize, dateCreated: dt, category:Category.Lua, archiveFilePath: archiveFilePath, url: url);
 
             // コネクションを開いてテーブル作成して閉じる  
             using (var con = new SQLiteConnection($"Data Source={Settings.Default.DataBaseFileName}"))
             {
                 con.Open();
-                string sql = $"insert into modinfo (name, status, filesize, datecreated, category, archivefilepath, url) values ('{name}', {(int)status}, {fileSize}, '{dt.ToString("yyyy-MM-dd HH:mm:ss")}', {(int)mod.Category}, '{archiveFilePath}', '{url}');";
+                string sql = $"insert into modinfo (name, status, filesize, datecreated, category, archivefilepath, url{(imagefilepath == null ? "" : ", imagefilepath")}) values ('{name.Replace("'","''")}', {(int)status}, {fileSize}, '{dt.ToString("yyyy-MM-dd HH:mm:ss")}', {(int)mod.GetNewCategory()}, '{archiveFilePath.Replace("'", "''")}', '{url}'{(imagefilepath == null ? "" : ",'" + imagefilepath.Replace("'", "''") + "'")});";
                 SQLiteCommand com = new SQLiteCommand(sql, con);
                 com.ExecuteNonQuery();
 
                 con.Close();
             }
-
 
         }
 

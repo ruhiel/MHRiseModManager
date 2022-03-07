@@ -1,5 +1,6 @@
 ﻿using MHRiseModManager.Models;
 using MHRiseModManager.Properties;
+using MHRiseModManager.Utils;
 using Reactive.Bindings;
 using Reactive.Bindings.Extensions;
 using SevenZip;
@@ -30,6 +31,7 @@ namespace MHRiseModManager.ViewModels
 
         public ReactiveProperty<string> NowModPath { get; } = new ReactiveProperty<string>();
         public ReactiveProperty<string> NowModSize { get; } = new ReactiveProperty<string>();
+        public ReactiveProperty<string> ModImagePath { get; } = new ReactiveProperty<string>();
 
         public ReactiveProperty<bool> Installable { get; } = new ReactiveProperty<bool>();
 
@@ -74,6 +76,15 @@ namespace MHRiseModManager.ViewModels
                     Installable.Value = modInfo.Status == Status.未インストール;
 
                     Unstallable.Value = modInfo.Status == Status.インストール済;
+
+                    if(modInfo.ImageFilePath != null)
+                    {
+                        ModImagePath.Value = Path.Combine(Environment.CurrentDirectory, Settings.Default.ImageCacheDirectoryName, modInfo.ImageFilePath);
+                    }
+                    else
+                    {
+                        ModImagePath.Value = string.Empty;
+                    }
 
                     ModFileTree.Clear();
 
@@ -191,14 +202,32 @@ namespace MHRiseModManager.ViewModels
 
             File.Copy(dropFile, targetFile, true);
 
-            _ModListManager.Insert(name: targetFileName, fileSize: new FileInfo(targetFile).Length, archiveFilePath: targetFile, url:"https://");
+            _ModListManager.Insert(name: targetFileName, fileSize: new FileInfo(targetFile).Length, archiveFilePath: targetFile, url:"https://", imagefilepath: imagefile);
 
             ModFileListReflesh();
+
+            CleanDirectory(Path.Combine(Path.GetTempPath(), Settings.Default.TempDirectoryName));
+        }
+
+        private void CleanDirectory(string path)
+        {
+            var di = new DirectoryInfo(path);
+
+            foreach (var f in di.GetFiles())
+            {
+                File.Delete(f.FullName);
+            }
+
+            foreach (var d in di.GetDirectories())
+            {
+                Directory.Delete(d.FullName, true);
+            }
         }
 
         private (string, string) PreProcess(string dropFile)
         {
             var resultFile = dropFile;
+            var imageFile = string.Empty;
 
             var tempDir = Path.Combine(Path.GetTempPath(), Settings.Default.TempDirectoryName);
             if (!Directory.Exists(tempDir))
@@ -208,10 +237,11 @@ namespace MHRiseModManager.ViewModels
 
             var targetFile = Path.Combine(tempDir, Path.GetFileName(dropFile));
             File.Copy(dropFile, targetFile, true);
-            var mod = new ModInfo(id: 1, name: "", status: Status.未インストール, fileSize: new FileInfo(targetFile).Length, dateCreated: DateTime.Now, archiveFilePath: targetFile, url: "");
+
+            var mod = new ModInfo(id: 1, name: "", status: Status.未インストール, fileSize: new FileInfo(targetFile).Length, dateCreated: DateTime.Now, category: Category.Lua, archiveFilePath: targetFile, url: "");
 
 
-            if(mod.Category == Category.Lua && !mod.GetFileTree().Any(x => !x.IsFile && x.Name == "reframework"))
+            if(mod.GetNewCategory() == Category.Lua && !mod.GetFileTree().Any(x => !x.IsFile && x.Name == "reframework"))
             {
                 var tempFileName = Path.GetRandomFileName();
                 // Luaかつreframeworkがない
@@ -237,19 +267,77 @@ namespace MHRiseModManager.ViewModels
                         Directory.Move(d.FullName, Path.Combine(reframeworkDir, d.Name));
                     }
                 }
-                SevenZipBase.SetLibraryPath("7z.dll");
-
-                File.Delete(targetFile);
-
-                var compressor = new SevenZipCompressor();
-                resultFile = Path.Combine(Path.GetDirectoryName(targetFile), $"{Path.GetFileNameWithoutExtension(targetFile)}.7z");
                 
-                compressor.CompressDirectory(Path.Combine(tempDir, tempFileName), resultFile);
+                resultFile = Path.Combine(Path.GetDirectoryName(targetFile), $"{Path.GetFileNameWithoutExtension(targetFile)}.zip");
+                
+                Utility.CompressionFile(Path.Combine(tempDir, tempFileName), resultFile);
 
                 Directory.Delete(Path.Combine(tempDir, tempFileName), true);
+
+            }
+            else if (mod.GetAllTree().Any(x => x.IsFile && x.Name == "modinfo.ini"))
+            {
+                // 画像ファイル処理
+                var iniFile = mod.GetAllTree().First(x => x.IsFile && x.Name == "modinfo.ini");
+                var iniFilePath = Path.Combine(Path.GetDirectoryName(targetFile), Path.GetFileNameWithoutExtension(targetFile), iniFile.Path);
+
+                var dic = Utility.ReadIni(iniFilePath);
+                var ssFileName = dic.First().Value["screenshot"];
+
+                var srcSSPath = Path.Combine(Path.GetDirectoryName(iniFilePath), ssFileName);
+
+                var cacheDir = Path.Combine(Environment.CurrentDirectory, Settings.Default.ImageCacheDirectoryName);
+                
+                if (!Directory.Exists(cacheDir))
+                {
+                    Directory.CreateDirectory(cacheDir);
+                }
+
+                var dstSSPath = Path.Combine(cacheDir, $"{Path.GetFileNameWithoutExtension(targetFile)}{Path.GetExtension(ssFileName)}");
+
+                File.Copy(srcSSPath, dstSSPath, true);
+
+                imageFile = Path.GetFileName(dstSSPath);
+
+                // アーカイブ処理
+                var srcDir = Path.GetDirectoryName(iniFilePath);
+
+                var di = new DirectoryInfo(srcDir);
+                
+                var tempFileName = Path.GetRandomFileName();
+
+                var targetDir = Path.Combine(tempDir, tempFileName);
+                Directory.CreateDirectory(targetDir);
+
+                if (di.GetFiles().Any())
+                {
+                    foreach (var f in di.GetFiles().Where(x => x.Name != ssFileName && x.Name != "modinfo.ini"))
+                    {
+                        File.Move(f.FullName, Path.Combine(targetDir, Path.GetFileName(f.FullName)));
+                    }
+                }
+
+                if (di.GetDirectories().Any())
+                {
+                    foreach (var d in di.GetDirectories())
+                    {
+                        Directory.Move(d.FullName, Path.Combine(targetDir, d.Name));
+                    }
+                }
+
+                /*
+                SevenZipBase.SetLibraryPath("7z.dll");
+                var compressor = new SevenZipCompressor();
+                compressor.CompressDirectory(targetDir, resultFile);
+                */
+
+                resultFile = Path.Combine(Path.GetDirectoryName(targetFile), $"{Path.GetFileNameWithoutExtension(targetFile)}.zip");
+
+
+                Utility.CompressionFile(targetDir, resultFile);
             }
 
-            return (resultFile, string.Empty);
+            return (resultFile, imageFile);
         }
 
         private void ModFileListReflesh()
@@ -258,12 +346,14 @@ namespace MHRiseModManager.ViewModels
 
             _ModListManager.SelectAll().ForEach(x =>
             {
-                ModInfoList.Add(new ModInfo(x.Id, x.Name, x.Status, x.FileSize, x.DateCreated, x.ArchiveFilePath, x.URL, this));
+                ModInfoList.Add(new ModInfo(id:x.Id, name:x.Name, status:x.Status, fileSize:x.FileSize, dateCreated:x.DateCreated, category:x.Category, archiveFilePath:x.ArchiveFilePath, url:x.URL, imageFilePath:x.ImageFilePath, mainViewModel:this));
             });
 
             NowModPath.Value = string.Empty;
 
             NowModSize.Value = string.Empty;
+
+            ModImagePath.Value = string.Empty;
 
             Installable.Value = false;
 

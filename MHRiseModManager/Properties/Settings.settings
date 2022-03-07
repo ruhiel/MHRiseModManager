@@ -14,5 +14,8 @@
     <Setting Name="TempDirectoryName" Type="System.String" Scope="User">
       <Value Profile="(Default)">MHRiseModManager</Value>
     </Setting>
+    <Setting Name="ImageCacheDirectoryName" Type="System.String" Scope="User">
+      <Value Profile="(Default)">ImageCache</Value>
+    </Setting>
   </Settings>
 </SettingsFile>

@@ -70,5 +70,17 @@ namespace MHRiseModManager.Properties {
                 this["TempDirectoryName"] = value;
             }
         }
+        
+        [global::System.Configuration.UserScopedSettingAttribute()]
+        [global::System.Diagnostics.DebuggerNonUserCodeAttribute()]
+        [global::System.Configuration.DefaultSettingValueAttribute("ImageCache")]
+        public string ImageCacheDirectoryName {
+            get {
+                return ((string)(this["ImageCacheDirectoryName"]));
+            }
+            set {
+                this["ImageCacheDirectoryName"] = value;
+            }
+        }
     }
 }

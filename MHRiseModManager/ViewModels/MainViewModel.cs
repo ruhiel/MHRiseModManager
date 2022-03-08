@@ -77,13 +77,13 @@ namespace MHRiseModManager.ViewModels
 
                     Unstallable.Value = modInfo.Status == Status.インストール済;
 
-                    if(modInfo.ImageFilePath != null)
+                    if(string.IsNullOrEmpty(modInfo.ImageFilePath))
                     {
-                        ModImagePath.Value = Path.Combine(Environment.CurrentDirectory, Settings.Default.ImageCacheDirectoryName, modInfo.ImageFilePath);
+                        ModImagePath.Value = Path.Combine(Environment.CurrentDirectory, Settings.Default.ImageCacheDirectoryName, "no_image_yoko.jpg"); 
                     }
                     else
                     {
-                        ModImagePath.Value = string.Empty;
+                        ModImagePath.Value = Path.Combine(Environment.CurrentDirectory, Settings.Default.ImageCacheDirectoryName, modInfo.ImageFilePath);
                     }
 
                     ModFileTree.Clear();

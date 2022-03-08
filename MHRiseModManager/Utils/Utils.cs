@@ -1,4 +1,6 @@
-﻿using System;
+﻿using SevenZip;
+using SharpCompress.Readers;
+using System;
 using System.Collections.Generic;
 using System.IO;
 using System.IO.Compression;
@@ -13,7 +15,30 @@ namespace MHRiseModManager.Utils
     {
         public static void ExtractFile(string path, string dir)
         {
-            ZipFile.ExtractToDirectory(path, dir);
+            if(Path.GetExtension(path) == ".zip")
+            {
+                ZipFile.ExtractToDirectory(path, dir);
+            }
+            else if(Path.GetExtension(path) == ".7z")
+            {
+                SevenZipBase.SetLibraryPath("7z.dll");
+                var extractor = new SevenZipExtractor(path);
+                extractor.ExtractArchive(dir);
+            }
+            else
+            {
+                using (Stream stream = File.OpenRead(path))
+                {
+                    var reader = ReaderFactory.Open(stream);
+                    while (reader.MoveToNextEntry())
+                    {
+                        if (!reader.Entry.IsDirectory)
+                        {
+                            reader.WriteEntryToDirectory(dir);
+                        }
+                    }
+                }
+            }
         }
 
         public static void CompressionFile(string dir, string path)

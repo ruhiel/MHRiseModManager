@@ -11,6 +11,8 @@ using MHRiseModManager.ViewModels;
 using System.IO;
 using SevenZip;
 using MHRiseModManager.Utils;
+using System.Reactive.Linq;
+using Reactive.Bindings.Extensions;
 
 namespace MHRiseModManager.Models
 {
@@ -119,7 +121,9 @@ namespace MHRiseModManager.Models
             return category;
         }
 
-        public ReactiveCommand<EventArgs> SomeCommand { get; set; } = new ReactiveCommand<EventArgs>();
+        public ReadOnlyReactiveProperty<bool> Updatable { get; }
+
+        public ReactiveCommand<EventArgs> ModUpdateCommand { get; set; } = new ReactiveCommand<EventArgs>();
 
         private MainViewModel _MainViewModel;
 
@@ -136,10 +140,12 @@ namespace MHRiseModManager.Models
             ImageFilePath = imageFilePath;
             _MainViewModel = mainViewModel;
 
-            SomeCommand.Subscribe(_ =>
+            ModUpdateCommand.Subscribe(_ =>
             {
                 _MainViewModel.OnRowUpdate(this);
             });
+
+            Updatable = this.ObserveProperty(x => x.Status).Select(y => y == Status.インストール済).ToReadOnlyReactiveProperty();
 
         }
 

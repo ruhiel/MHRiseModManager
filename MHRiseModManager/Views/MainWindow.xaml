@@ -21,6 +21,7 @@
     </mah:MetroWindow.DataContext>
     <mah:MetroWindow.Resources>
         <converter:DateTimeConverter x:Key="DateTimeConverter"/>
+        <converter:FileSizeConverter x:Key="FileSizeConverter" />
     </mah:MetroWindow.Resources>
     <i:Interaction.Triggers>
         <i:EventTrigger EventName="Closed">
@@ -58,15 +59,33 @@
                     </i:Interaction.Triggers>
                     <DataGrid.Columns>
                         <DataGridTextColumn Header="名前" Binding="{Binding Name}" Width="2*"/>
-                        <DataGridTextColumn Header="状態" Binding="{Binding Status}" Width="*"/>
-                        <DataGridTextColumn Header="ファイルサイズ" Binding="{Binding FileSize}" Width="*"/>
+                        <DataGridTextColumn Header="状態" Binding="{Binding Status}" Width="0.7*">
+                            <DataGridTextColumn.ElementStyle>
+                                <Style TargetType="TextBlock">
+                                    <Setter Property="TextAlignment" Value="Center"/>
+                                </Style>
+                            </DataGridTextColumn.ElementStyle>
+                        </DataGridTextColumn>
+                        <DataGridTextColumn Header="ファイルサイズ" Binding="{Binding FileSize, Converter={StaticResource FileSizeConverter}}" Width="*">
+                            <DataGridTextColumn.ElementStyle>
+                                <Style TargetType="TextBlock">
+                                    <Setter Property="TextAlignment" Value="Right"/>
+                                </Style>
+                            </DataGridTextColumn.ElementStyle>
+                        </DataGridTextColumn>
                         <DataGridTextColumn Header="作成日時" Binding="{Binding DateCreated, Converter={StaticResource DateTimeConverter}}" Width="1.2*"/>
-                        <DataGridTextColumn Header="カテゴリ" Binding="{Binding Category}" Width="*"/>
+                        <DataGridTextColumn Header="カテゴリ" Binding="{Binding Category}" Width="0.6*">
+                            <DataGridTextColumn.ElementStyle>
+                                <Style TargetType="TextBlock">
+                                    <Setter Property="TextAlignment" Value="Center"/>
+                                </Style>
+                            </DataGridTextColumn.ElementStyle>
+                        </DataGridTextColumn>
                         <DataGridTextColumn Header="URL" Binding="{Binding URL}" Width="*"/>
                         <DataGridTemplateColumn Header="Mod更新">
                             <DataGridTemplateColumn.CellTemplate>
                                 <DataTemplate>
-                                    <Button Content="更新" Command="{Binding SomeCommand}"/>
+                                    <Button Content="更新" Command="{Binding ModUpdateCommand}" IsEnabled="{Binding Updatable.Value}"/>
                                 </DataTemplate>
                             </DataGridTemplateColumn.CellTemplate>
                         </DataGridTemplateColumn>
@@ -95,7 +114,7 @@
                         <ColumnDefinition />
                     </Grid.ColumnDefinitions>
                     <Grid.RowDefinitions>
-                        <RowDefinition Height="2*"/>
+                        <RowDefinition Height="3*"/>
                         <RowDefinition Height="2*"/>
                         <RowDefinition Height="1*"/>
                     </Grid.RowDefinitions>

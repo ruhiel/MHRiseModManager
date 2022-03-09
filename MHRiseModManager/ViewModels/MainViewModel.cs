@@ -101,9 +101,10 @@ namespace MHRiseModManager.ViewModels
             {
                 var files = new List<string>();
 
-                foreach(var item in _NowSelectModInfo.GetAllTree().Where(x => x.IsFile))
+                foreach (var item in _NowSelectModInfo.GetAllTree().Where(x => x.IsFile))
                 {
-                    var dir = Path.GetDirectoryName(item.Path);
+                    var itemPath = item.Path;
+                    var dir = Path.GetDirectoryName(itemPath);
 
                     var targetDir = Path.Combine(Settings.Default.GameDirectoryPath, dir);
 
@@ -112,13 +113,28 @@ namespace MHRiseModManager.ViewModels
                         Directory.CreateDirectory(targetDir);
                     }
 
-                    var srcFile = Path.Combine(_NowSelectModInfo.ExtractArchivePath, item.Path);
+                    var srcFile = Path.Combine(_NowSelectModInfo.ExtractArchivePath, itemPath);
 
-                    var targetFile = Path.Combine(Settings.Default.GameDirectoryPath, item.Path);
+                    var targetFile = string.Empty;
+
+                    if(_NowSelectModInfo.Category == Category.Pak)
+                    {
+                        var num = _ModListManager.SelectLastPakNo();
+
+                        var fileName = $"re_chunk_000.pak.patch_{num:000}.pak";
+
+                        targetFile = Path.Combine(Settings.Default.GameDirectoryPath, fileName);
+
+                        itemPath = Path.Combine(Path.GetDirectoryName(itemPath), fileName);
+                    }
+                    else
+                    {
+                        targetFile = Path.Combine(Settings.Default.GameDirectoryPath, itemPath);
+                    }
 
                     File.Copy(srcFile, targetFile, true);
 
-                    files.Add(item.Path);
+                    files.Add(itemPath);
                 }
 
                 _ModListManager.Install(_NowSelectModInfo.Id, files);
@@ -325,16 +341,27 @@ namespace MHRiseModManager.ViewModels
                     }
                 }
 
-                /*
-                SevenZipBase.SetLibraryPath("7z.dll");
-                var compressor = new SevenZipCompressor();
-                compressor.CompressDirectory(targetDir, resultFile);
-                */
+                resultFile = Path.Combine(Path.GetDirectoryName(targetFile), $"{Path.GetFileNameWithoutExtension(targetFile)}.zip");
+
+                Utility.CompressionFile(targetDir, resultFile);
+            }
+            else if (Category.Pak == mod.GetNewCategory() && mod.GetAllTree().Where(x => x.IsFile).Count() > 1)
+            {
+                var tempFileName = Path.GetRandomFileName();
+
+                var fileInfo = mod.GetFileTree().Find(x => Path.GetExtension(x.Path) == ".pak");
+
+                var targetDir = Path.Combine(tempDir, tempFileName);
+                Directory.CreateDirectory(targetDir);
+
+                var srcFile = Path.Combine(tempDir, Path.GetFileNameWithoutExtension(dropFile), fileInfo.Path);
+
+                File.Move(srcFile, Path.Combine(targetDir, Path.GetFileName(fileInfo.Path)));
 
                 resultFile = Path.Combine(Path.GetDirectoryName(targetFile), $"{Path.GetFileNameWithoutExtension(targetFile)}.zip");
 
-
                 Utility.CompressionFile(targetDir, resultFile);
+
             }
 
             return (resultFile, imageFile);

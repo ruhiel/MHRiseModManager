@@ -30,7 +30,7 @@ namespace MHRiseModManager.ViewModels
         public ReactiveProperty<string> GameDirectoryPath { get; } = new ReactiveProperty<string>(Settings.Default.GameDirectoryPath);
 
         public ReactiveProperty<string> NowModPath { get; } = new ReactiveProperty<string>();
-        public ReactiveProperty<string> NowModSize { get; } = new ReactiveProperty<string>();
+        public ReactiveProperty<long?> NowModSize { get; } = new ReactiveProperty<long?>();
         public ReactiveProperty<string> ModImagePath { get; } = new ReactiveProperty<string>();
 
         public ReactiveProperty<bool> Installable { get; } = new ReactiveProperty<bool>();
@@ -71,7 +71,7 @@ namespace MHRiseModManager.ViewModels
 
                     NowModPath.Value = modInfo.Name;
 
-                    NowModSize.Value = modInfo.FileSize.ToString();
+                    NowModSize.Value = modInfo.FileSize;
 
                     Installable.Value = modInfo.Status == Status.未インストール;
 
@@ -378,7 +378,7 @@ namespace MHRiseModManager.ViewModels
 
             NowModPath.Value = string.Empty;
 
-            NowModSize.Value = string.Empty;
+            NowModSize.Value = null;
 
             ModImagePath.Value = string.Empty;
 

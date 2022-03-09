@@ -119,7 +119,7 @@ namespace MHRiseModManager.Models
             {
                 con.Open();
 
-                string sql = "select row_number() over (order by id) AS id from modinfo where category = 0 and status = 1";
+                string sql = $"select row_number() over (order by id) AS id from modinfo where category = {(int)Category.Pak} and status = {(int)Status.インストール済}";
                 using (var adapter = new SQLiteDataAdapter(sql, con))
                 using (var dataset = new DataSet())
                 {

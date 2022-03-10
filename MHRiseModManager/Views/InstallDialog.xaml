@@ -1,0 +1,45 @@
+﻿<mah:MetroWindow x:Class="MHRiseModManager.Views.InstallDialog"
+        xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
+        xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
+        xmlns:mah="clr-namespace:MahApps.Metro.Controls;assembly=MahApps.Metro"
+        xmlns:local="clr-namespace:MHRiseModManager.Views"
+        xmlns:vm="clr-namespace:MHRiseModManager.ViewModels"
+        mc:Ignorable="d"
+        Title="InstallDialog" Height="450" Width="800"
+        ShowCloseButton="False"
+        ShowMinButton="False"
+        ShowMaxRestoreButton="False"
+        ResizeMode="NoResize">
+    <mah:MetroWindow.DataContext>
+        <vm:InstallDialogViewModel/>
+    </mah:MetroWindow.DataContext>
+    <Grid Margin="5">
+        <Grid.RowDefinitions>
+            <RowDefinition Height="8*"/>
+            <RowDefinition Height="*"/>
+        </Grid.RowDefinitions>
+        <Grid Grid.Row="0">
+            <Grid.ColumnDefinitions>
+                <ColumnDefinition Width="Auto" />
+                <ColumnDefinition Width="Auto" />
+                <ColumnDefinition Width="*" />
+            </Grid.ColumnDefinitions>
+            <Grid.RowDefinitions>
+                <RowDefinition Height="*" />
+                <RowDefinition Height="*" />
+                <RowDefinition Height="8*" />
+            </Grid.RowDefinitions>
+            <TextBlock Grid.Row="0" Grid.Column="1" Padding="5" Text="Mod名(任意)" Margin="5"/>
+            <TextBox Grid.Row="0" Grid.Column="2" Margin="5" Text="{Binding Name.Value}"/>
+            <TextBlock Grid.Row="1" Grid.Column="1" Padding="5" Text="URL(任意)" Margin="5"/>
+            <TextBox Grid.Row="1" Grid.Column="2" Margin="5" Text="{Binding URL.Value}"/>
+            <TextBlock Grid.Row="2" Grid.Column="1" Padding="5" Text="メモ(任意)" Margin="5"/>
+            <TextBox Grid.Row="2" Grid.Column="2" Margin="5" Text="{Binding Memo.Value}" TextWrapping="Wrap" AcceptsReturn="True" VerticalScrollBarVisibility="Visible"/>
+        </Grid>
+        <StackPanel Grid.Row="1" Orientation="Vertical">
+            <Button Width="100" Content="OK" Command="{Binding CloseWindow}" CommandParameter="{Binding RelativeSource={RelativeSource Mode=FindAncestor, AncestorType=Window}}" Margin="5"/>
+        </StackPanel>
+    </Grid>
+</mah:MetroWindow>

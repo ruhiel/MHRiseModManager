@@ -1,6 +1,7 @@
 ﻿using MHRiseModManager.Models;
 using MHRiseModManager.Properties;
 using MHRiseModManager.Utils;
+using MHRiseModManager.Views;
 using Reactive.Bindings;
 using Reactive.Bindings.Extensions;
 using SevenZip;
@@ -36,6 +37,8 @@ namespace MHRiseModManager.ViewModels
         public ReactiveProperty<bool> Installable { get; } = new ReactiveProperty<bool>();
 
         public ReactiveProperty<bool> Unstallable { get; } = new ReactiveProperty<bool>();
+
+        public ReactiveProperty<string> NowMemo { get; } = new ReactiveProperty<string>();
 
         public ReactiveCommand<DragEventArgs> FileDropCommand { get; private set; }
 
@@ -77,7 +80,9 @@ namespace MHRiseModManager.ViewModels
 
                     Unstallable.Value = modInfo.Status == Status.インストール済;
 
-                    if(string.IsNullOrEmpty(modInfo.ImageFilePath))
+                    NowMemo.Value = modInfo.Memo;
+
+                    if (string.IsNullOrEmpty(modInfo.ImageFilePath))
                     {
                         ModImagePath.Value = Path.Combine(Environment.CurrentDirectory, Settings.Default.ImageCacheDirectoryName, "no_image_yoko.jpg"); 
                     }
@@ -200,6 +205,12 @@ namespace MHRiseModManager.ViewModels
                 return;
             }
 
+            var dialog = new InstallDialog();
+
+            dialog.ShowDialog();
+
+            var returnModel = dialog.DataContext as InstallDialogViewModel;
+
             var dropFile = dropFiles[0];
             string imagefile = null;
 
@@ -215,10 +226,11 @@ namespace MHRiseModManager.ViewModels
 
             var targetFileName = Path.GetFileName(dropFile);
             var targetFile = Path.Combine(cacheDir, targetFileName);
+            var modName = string.IsNullOrEmpty(returnModel.Name.Value) ? null : returnModel.Name.Value;
 
             File.Copy(dropFile, targetFile, true);
 
-            _ModListManager.Insert(name: targetFileName, fileSize: new FileInfo(targetFile).Length, archiveFilePath: targetFile, url:"https://", imagefilepath: imagefile);
+            _ModListManager.Insert(name: targetFileName, fileSize: new FileInfo(targetFile).Length, archiveFilePath: targetFile, url: returnModel.URL.Value, memo:returnModel.Memo.Value, imagefilepath: imagefile, modName: modName);
 
             ModFileListReflesh();
 
@@ -254,7 +266,7 @@ namespace MHRiseModManager.ViewModels
             var targetFile = Path.Combine(tempDir, Path.GetFileName(dropFile));
             File.Copy(dropFile, targetFile, true);
 
-            var mod = new ModInfo(id: 1, name: "", status: Status.未インストール, fileSize: new FileInfo(targetFile).Length, dateCreated: DateTime.Now, category: Category.Lua, archiveFilePath: targetFile, url: "");
+            var mod = new ModInfo(id: 1, name: "", status: Status.未インストール, fileSize: new FileInfo(targetFile).Length, dateCreated: DateTime.Now, category: Category.Lua, archiveFilePath: targetFile, url: "", memo:"");
 
 
             if(mod.GetNewCategory() == Category.Lua && !mod.GetFileTree().Any(x => !x.IsFile && x.Name == "reframework"))
@@ -373,7 +385,7 @@ namespace MHRiseModManager.ViewModels
 
             _ModListManager.SelectAll().ForEach(x =>
             {
-                ModInfoList.Add(new ModInfo(id:x.Id, name:x.Name, status:x.Status, fileSize:x.FileSize, dateCreated:x.DateCreated, category:x.Category, archiveFilePath:x.ArchiveFilePath, url:x.URL, imageFilePath:x.ImageFilePath, mainViewModel:this));
+                ModInfoList.Add(new ModInfo(id:x.Id, name:x.Name, status:x.Status, fileSize:x.FileSize, dateCreated:x.DateCreated, category:x.Category, archiveFilePath:x.ArchiveFilePath, url:x.URL, imageFilePath:x.ImageFilePath, memo:x.Memo, modName:x.ModName, mainViewModel:this));
             });
 
             NowModPath.Value = string.Empty;
@@ -385,6 +397,8 @@ namespace MHRiseModManager.ViewModels
             Installable.Value = false;
 
             Unstallable.Value = false;
+
+            NowMemo.Value = string.Empty;
 
             ModFileTree.Clear();
         }

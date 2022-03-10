@@ -83,6 +83,21 @@ namespace MHRiseModManager.Models
             get => _ImageFilePath;
             set => SetProperty(ref _ImageFilePath, value);
         }
+        [Column(Name = "memo", CanBeNull = true, DbType = "TEXT")]
+        private string _Memo;
+        public string Memo
+        {
+            get => _Memo;
+            set => SetProperty(ref _Memo, value);
+        }
+        [Column(Name = "modname", CanBeNull = true, DbType = "TEXT")]
+        private string _ModName;
+        public string ModName
+        {
+            get => _ModName;
+            set => SetProperty(ref _ModName, value);
+        }
+
         public ModInfo() { }
 
         public string ExtractArchivePath
@@ -123,11 +138,13 @@ namespace MHRiseModManager.Models
 
         public ReadOnlyReactiveProperty<bool> Updatable { get; }
 
+        public ReadOnlyReactiveProperty<string> ModNameView { get; }
+
         public ReactiveCommand<EventArgs> ModUpdateCommand { get; set; } = new ReactiveCommand<EventArgs>();
 
         private MainViewModel _MainViewModel;
 
-        public ModInfo(int id, string name, Status status, long fileSize, DateTime dateCreated, Category category, string archiveFilePath, string url, string imageFilePath = null, MainViewModel mainViewModel = null)
+        public ModInfo(int id, string name, Status status, long fileSize, DateTime dateCreated, Category category, string archiveFilePath, string url, string memo, string modName = null, string imageFilePath = null, MainViewModel mainViewModel = null)
         {
             Id = id;
             Name = name;
@@ -138,6 +155,8 @@ namespace MHRiseModManager.Models
             ArchiveFilePath = archiveFilePath;
             URL = url;
             ImageFilePath = imageFilePath;
+            Memo = memo;
+            ModName = modName;
             _MainViewModel = mainViewModel;
 
             ModUpdateCommand.Subscribe(_ =>
@@ -147,6 +166,7 @@ namespace MHRiseModManager.Models
 
             Updatable = this.ObserveProperty(x => x.Status).Select(y => y == Status.インストール済).ToReadOnlyReactiveProperty();
 
+            ModNameView = this.ObserveProperty(x => x.ModName).Select(y => string.IsNullOrEmpty(y) ? Name : y).ToReadOnlyReactiveProperty();
         }
 
         public List<ModFileTree> GetFileTree() => Search(ExtractArchivePath);

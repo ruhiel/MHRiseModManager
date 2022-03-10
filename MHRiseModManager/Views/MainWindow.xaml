@@ -58,7 +58,7 @@
                         </i:EventTrigger>
                     </i:Interaction.Triggers>
                     <DataGrid.Columns>
-                        <DataGridTextColumn Header="名前" Binding="{Binding Name}" Width="2*"/>
+                        <DataGridTextColumn Header="名前" Binding="{Binding ModNameView.Value}" Width="2*"/>
                         <DataGridTextColumn Header="状態" Binding="{Binding Status}" Width="0.7*">
                             <DataGridTextColumn.ElementStyle>
                                 <Style TargetType="TextBlock">
@@ -114,7 +114,8 @@
                         <ColumnDefinition />
                     </Grid.ColumnDefinitions>
                     <Grid.RowDefinitions>
-                        <RowDefinition Height="3*"/>
+                        <RowDefinition Height="2*"/>
+                        <RowDefinition Height="*"/>
                         <RowDefinition Height="2*"/>
                         <RowDefinition Height="1*"/>
                     </Grid.RowDefinitions>
@@ -128,11 +129,12 @@
                             <TextBlock Text="{Binding NowModSize.Value, Converter={StaticResource FileSizeConverter}}"/>
                         </WrapPanel>                        
                     </StackPanel>
-                    <StackPanel Grid.Row="1" Grid.Column="0" Grid.ColumnSpan="2">
+                    <TextBox Grid.Row="1" Grid.Column="0" Grid.ColumnSpan="2" Text="{Binding NowMemo.Value}" TextWrapping="Wrap" AcceptsReturn="True" VerticalScrollBarVisibility="Visible"/>
+                    <StackPanel Grid.Row="2" Grid.Column="0" Grid.ColumnSpan="2">
                         <Image Source="{Binding ModImagePath.Value}"/>
                     </StackPanel>
-                    <Button Margin ="5" Grid.Row="2" Grid.Column="0" Content="インストール" IsEnabled="{Binding Installable.Value}" Command="{Binding InstallCommand}"/>
-                    <Button Margin ="5" Grid.Row="2" Grid.Column="1" Content="アンインストール" IsEnabled="{Binding Unstallable.Value}" Command="{Binding UnstallCommand}"/>
+                    <Button Margin ="5" Grid.Row="3" Grid.Column="0" Content="インストール" IsEnabled="{Binding Installable.Value}" Command="{Binding InstallCommand}"/>
+                    <Button Margin ="5" Grid.Row="3" Grid.Column="1" Content="アンインストール" IsEnabled="{Binding Unstallable.Value}" Command="{Binding UnstallCommand}"/>
                 </Grid>
             </GroupBox>
         </Grid>

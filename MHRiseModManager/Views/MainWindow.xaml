@@ -66,7 +66,7 @@
                                 </Style>
                             </DataGridTextColumn.ElementStyle>
                         </DataGridTextColumn>
-                        <DataGridTextColumn Header="ファイルサイズ" Binding="{Binding FileSize, Converter={StaticResource FileSizeConverter}}" Width="*">
+                        <DataGridTextColumn Header="ファイルサイズ" Binding="{Binding FileSize, Converter={StaticResource FileSizeConverter}}" Width="0.7*">
                             <DataGridTextColumn.ElementStyle>
                                 <Style TargetType="TextBlock">
                                     <Setter Property="TextAlignment" Value="Right"/>
@@ -81,7 +81,9 @@
                                 </Style>
                             </DataGridTextColumn.ElementStyle>
                         </DataGridTextColumn>
+                        <!--
                         <DataGridTextColumn Header="URL" Binding="{Binding URL}" Width="*"/>
+                        -->
                         <DataGridTemplateColumn Header="Mod更新">
                             <DataGridTemplateColumn.CellTemplate>
                                 <DataTemplate>
@@ -121,13 +123,25 @@
                     </Grid.RowDefinitions>
                     <StackPanel Grid.Row="0" Grid.Column="0" Grid.ColumnSpan="2">
                         <WrapPanel>
-                            <TextBlock Text="パス：" Margin="0,0,5,0"/>
-                            <TextBlock Text="{Binding NowModPath.Value}"/>
+                            <Label Content="パス：" Margin="0,0,0,0" Padding="3"/>
+                            <Label Padding="3">
+                                <TextBlock Text="{Binding NowModPath.Value}"/>
+                            </Label>
                         </WrapPanel>
                         <WrapPanel>
-                            <TextBlock Text="ファイルサイズ：" Margin="0,0,5,0"/>
-                            <TextBlock Text="{Binding NowModSize.Value, Converter={StaticResource FileSizeConverter}}"/>
-                        </WrapPanel>                        
+                            <Label Content="ファイルサイズ：" Margin="0,0,0,0" Padding="3"/>
+                            <Label Padding="3">
+                                <TextBlock Text="{Binding NowModSize.Value, Converter={StaticResource FileSizeConverter}}"/>
+                            </Label>
+                        </WrapPanel>
+                        <WrapPanel>
+                            <Label Content="URL：" Margin="0,0,0,0" Padding="3"/>
+                            <Label Padding="3">
+                                <Hyperlink NavigateUri="{Binding NowModURL.Value}" Command="{Binding NavigateCommand}">
+                                    <TextBlock Text="{Binding NowModURL.Value}" />
+                                </Hyperlink>
+                            </Label>
+                        </WrapPanel>
                     </StackPanel>
                     <TextBox Grid.Row="1" Grid.Column="0" Grid.ColumnSpan="2" Text="{Binding NowMemo.Value}" TextWrapping="Wrap" AcceptsReturn="True" VerticalScrollBarVisibility="Visible"/>
                     <StackPanel Grid.Row="2" Grid.Column="0" Grid.ColumnSpan="2">

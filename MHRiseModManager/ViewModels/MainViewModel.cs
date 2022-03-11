@@ -15,6 +15,7 @@ using System.Text;
 using System.Threading.Tasks;
 using System.Windows;
 using System.Windows.Controls;
+using System.Windows.Navigation;
 
 namespace MHRiseModManager.ViewModels
 {
@@ -49,6 +50,9 @@ namespace MHRiseModManager.ViewModels
         private ModInfo _NowSelectModInfo;
 
         public ObservableCollection<ModInfo> ModInfoList { get; set; } = new ObservableCollection<ModInfo>();
+
+        public ReactiveProperty<string> NowModURL { get; } = new ReactiveProperty<string>();
+        public ReactiveCommand<Object> NavigateCommand { get; } = new ReactiveCommand<Object>();
         public MainViewModel()
         {
             FileDropCommand = new ReactiveCommand<DragEventArgs>().AddTo(Disposable);
@@ -81,6 +85,8 @@ namespace MHRiseModManager.ViewModels
                     Unstallable.Value = modInfo.Status == Status.インストール済;
 
                     NowMemo.Value = modInfo.Memo;
+
+                    NowModURL.Value = modInfo.URL;
 
                     if (string.IsNullOrEmpty(modInfo.ImageFilePath))
                     {
@@ -158,6 +164,11 @@ namespace MHRiseModManager.ViewModels
 
                 Disposable.Dispose();
 
+            });
+
+            NavigateCommand.Subscribe(e =>
+            {
+                System.Diagnostics.Process.Start(NowModURL.Value);
             });
 
             ModFileListReflesh();
@@ -399,6 +410,8 @@ namespace MHRiseModManager.ViewModels
             Unstallable.Value = false;
 
             NowMemo.Value = string.Empty;
+
+            NowModURL.Value = string.Empty;
 
             ModFileTree.Clear();
         }

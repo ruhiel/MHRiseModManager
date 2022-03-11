@@ -54,6 +54,7 @@ namespace MHRiseModManager.ViewModels
         public ReactiveCommand<Object> NavigateCommand { get; } = new ReactiveCommand<Object>();
 
         public ReactiveCommand<object> OpenGameFolderCommand { get; } = new ReactiveCommand<Object>();
+        public IDialogCoordinator MahAppsDialogCoordinator { get; set; }
 
         public MainViewModel()
         {
@@ -216,7 +217,7 @@ namespace MHRiseModManager.ViewModels
             }
         }
 
-        private void OnFileDrop(DragEventArgs e)
+        private async void OnFileDrop(DragEventArgs e)
         {
             if (!e.Data.GetDataPresent(DataFormats.FileDrop))
             {
@@ -260,6 +261,8 @@ namespace MHRiseModManager.ViewModels
             ModFileListReflesh();
 
             CleanDirectory(Path.Combine(Path.GetTempPath(), Settings.Default.TempDirectoryName));
+
+            await MahAppsDialogCoordinator.ShowMessageAsync(this, "MHRiseModManager", "Modを新規登録しました。");
         }
 
         private void CleanDirectory(string path)

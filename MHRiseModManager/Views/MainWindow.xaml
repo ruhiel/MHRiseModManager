@@ -14,10 +14,16 @@
         xmlns:controls="clr-namespace:MahApps.Metro.Controls;assembly=MahApps.Metro"
         Title="MHRiseModManager"
         TitleCharacterCasing="Normal"
+        xmlns:Dialog="clr-namespace:MahApps.Metro.Controls.Dialogs;assembly=MahApps.Metro"
+        Dialog:DialogParticipation.Register="{Binding}"
         Height="800"
         Width="1600">
     <mah:MetroWindow.DataContext>
-        <vm:MainViewModel/>
+        <vm:MainViewModel>
+            <vm:MainViewModel.MahAppsDialogCoordinator>
+                <Dialog:DialogCoordinator/>
+            </vm:MainViewModel.MahAppsDialogCoordinator>
+        </vm:MainViewModel>
     </mah:MetroWindow.DataContext>
     <mah:MetroWindow.Resources>
         <converter:DateTimeConverter x:Key="DateTimeConverter"/>

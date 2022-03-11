@@ -30,15 +30,19 @@
     </i:Interaction.Triggers>
     <Grid>
         <Grid.RowDefinitions>
-            <RowDefinition Height="30"/>
+            <RowDefinition Height="40"/>
             <RowDefinition Height="*"/>
         </Grid.RowDefinitions>
-        <StackPanel Margin="5" Grid.Row="0">
-            <DockPanel>
-                <Label>ゲームフォルダ</Label>
-                <TextBox Text="{Binding GameDirectoryPath.Value}"/>
-            </DockPanel>
-        </StackPanel>
+        <Grid Margin="5" Grid.Row="0">
+            <Grid.ColumnDefinitions>
+                <ColumnDefinition Width="0.5*"/>
+                <ColumnDefinition Width="9*"/>
+                <ColumnDefinition Width="*"/>
+            </Grid.ColumnDefinitions>
+            <Label VerticalAlignment="Center" Grid.Column="0" Padding="0">ゲームフォルダ</Label>
+            <TextBox VerticalContentAlignment="Center" VerticalAlignment="Center" Padding="0" Grid.Column="1" Text="{Binding GameDirectoryPath.Value}"/>
+            <Button VerticalAlignment="Center" Padding="0" Margin="0" Grid.Column="2" Width="100" Content="開く" Command="{Binding OpenGameFolderCommand}"/>
+        </Grid>
         <Grid Grid.Row="1">
             <Grid.ColumnDefinitions>
                 <ColumnDefinition Width="2*"/>
@@ -116,10 +120,9 @@
                         <ColumnDefinition />
                     </Grid.ColumnDefinitions>
                     <Grid.RowDefinitions>
+                        <RowDefinition Height="3*"/>
                         <RowDefinition Height="2*"/>
                         <RowDefinition Height="*"/>
-                        <RowDefinition Height="2*"/>
-                        <RowDefinition Height="1*"/>
                     </Grid.RowDefinitions>
                     <StackPanel Grid.Row="0" Grid.Column="0" Grid.ColumnSpan="2">
                         <WrapPanel>
@@ -142,16 +145,20 @@
                                 </Hyperlink>
                             </Label>
                         </WrapPanel>
+                        <WrapPanel>
+                            <Label Content="メモ：" Margin="0,0,0,0" Padding="3"/>
+                            <Label Padding="3">
+                                <TextBlock Text="{Binding NowMemo.Value}"/>
+                            </Label>
+                        </WrapPanel>
                     </StackPanel>
-                    <TextBox Grid.Row="1" Grid.Column="0" Grid.ColumnSpan="2" Text="{Binding NowMemo.Value}" TextWrapping="Wrap" AcceptsReturn="True" VerticalScrollBarVisibility="Visible"/>
-                    <StackPanel Grid.Row="2" Grid.Column="0" Grid.ColumnSpan="2">
+                    <StackPanel Grid.Row="1" Grid.Column="0" Grid.ColumnSpan="2">
                         <Image Source="{Binding ModImagePath.Value}"/>
                     </StackPanel>
-                    <Button Margin ="5" Grid.Row="3" Grid.Column="0" Content="インストール" IsEnabled="{Binding Installable.Value}" Command="{Binding InstallCommand}"/>
-                    <Button Margin ="5" Grid.Row="3" Grid.Column="1" Content="アンインストール" IsEnabled="{Binding Unstallable.Value}" Command="{Binding UnstallCommand}"/>
+                    <Button Margin ="5" Grid.Row="2" Grid.Column="0" Content="インストール" IsEnabled="{Binding Installable.Value}" Command="{Binding InstallCommand}"/>
+                    <Button Margin ="5" Grid.Row="2" Grid.Column="1" Content="アンインストール" IsEnabled="{Binding Unstallable.Value}" Command="{Binding UnstallCommand}"/>
                 </Grid>
             </GroupBox>
         </Grid>
     </Grid>
-
 </mah:MetroWindow>

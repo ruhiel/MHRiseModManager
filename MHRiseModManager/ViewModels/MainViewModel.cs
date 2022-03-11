@@ -4,18 +4,17 @@ using MHRiseModManager.Utils;
 using MHRiseModManager.Views;
 using Reactive.Bindings;
 using Reactive.Bindings.Extensions;
-using SevenZip;
 using System;
 using System.Collections.Generic;
 using System.Collections.ObjectModel;
 using System.IO;
 using System.Linq;
 using System.Reactive.Disposables;
-using System.Text;
-using System.Threading.Tasks;
 using System.Windows;
 using System.Windows.Controls;
-using System.Windows.Navigation;
+using MahApps.Metro.Controls.Dialogs;
+using MahApps.Metro.Controls;
+using System.Threading.Tasks;
 
 namespace MHRiseModManager.ViewModels
 {
@@ -53,6 +52,9 @@ namespace MHRiseModManager.ViewModels
 
         public ReactiveProperty<string> NowModURL { get; } = new ReactiveProperty<string>();
         public ReactiveCommand<Object> NavigateCommand { get; } = new ReactiveCommand<Object>();
+
+        public ReactiveCommand<object> OpenGameFolderCommand { get; } = new ReactiveCommand<Object>();
+
         public MainViewModel()
         {
             FileDropCommand = new ReactiveCommand<DragEventArgs>().AddTo(Disposable);
@@ -169,6 +171,18 @@ namespace MHRiseModManager.ViewModels
             NavigateCommand.Subscribe(e =>
             {
                 System.Diagnostics.Process.Start(NowModURL.Value);
+            });
+
+            OpenGameFolderCommand.Subscribe(e =>
+            {
+                var browser = new System.Windows.Forms.FolderBrowserDialog();
+
+                browser.Description = "フォルダーを選択してください";
+
+                if (browser.ShowDialog() == System.Windows.Forms.DialogResult.OK)
+                {
+                    GameDirectoryPath.Value = browser.SelectedPath;
+                }
             });
 
             ModFileListReflesh();

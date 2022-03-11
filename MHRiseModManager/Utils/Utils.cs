@@ -13,6 +13,20 @@ namespace MHRiseModManager.Utils
 {
     public static class Utility
     {
+        public static void CleanDirectory(string path)
+        {
+            var di = new DirectoryInfo(path);
+            foreach (var f in di.GetFiles())
+            {
+                f.Delete();
+            }
+
+            foreach (var d in di.GetDirectories())
+            {
+                d.Delete(true);
+            }
+        }
+
         public static bool IsEmptyDirectory(string path)
         {
             if (!Directory.Exists(path)) return false;

@@ -104,9 +104,16 @@ namespace MHRiseModManager.Models
 
                 foreach (var file in files)
                 {
-                    sql = $"insert into modinfodetail (modinfoid, path, delflg) values ({id}, '{file}', 0)";
+                    sql = $"select count(*) from modinfodetail where modinfoid = {id} and path = '{file}'";
                     com = new SQLiteCommand(sql, con);
-                    com.ExecuteNonQuery();
+                    var record = (long)com.ExecuteScalar();
+
+                    if(record == 0)
+                    {
+                        sql = $"insert into modinfodetail (modinfoid, path, delflg) values ({id}, '{file}', 0)";
+                        com = new SQLiteCommand(sql, con);
+                        com.ExecuteNonQuery();
+                    }
                 }
 
                 con.Close();

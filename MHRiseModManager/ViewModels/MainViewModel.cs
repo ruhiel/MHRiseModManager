@@ -196,7 +196,7 @@ namespace MHRiseModManager.ViewModels
             {
                 CleanCache();
 
-                CleanTemp();
+                Utility.CleanDirectory(Path.Combine(Path.GetTempPath(), Settings.Default.TempDirectoryName));
 
                 Settings.Default.GameDirectoryPath = GameDirectoryPath.Value;
                 Settings.Default.Save();
@@ -224,21 +224,6 @@ namespace MHRiseModManager.ViewModels
 
             ModFileListReflesh();
 
-        }
-
-        private void CleanTemp()
-        {
-            var tempDir = Path.Combine(Path.GetTempPath(), Settings.Default.TempDirectoryName);
-            var di = new DirectoryInfo(tempDir);
-            foreach (var f in di.GetFiles())
-            {
-                f.Delete();
-            }
-
-            foreach (var d in di.GetDirectories())
-            {
-                d.Delete(true);
-            }
         }
 
         private static void CleanCache()
@@ -291,6 +276,8 @@ namespace MHRiseModManager.ViewModels
             var modName = string.IsNullOrEmpty(returnModel.Name.Value) ? null : returnModel.Name.Value;
 
             File.Copy(dropFile, targetFile, true);
+
+            Utility.CleanDirectory(Path.Combine(Path.GetTempPath(), Settings.Default.TempDirectoryName));
 
             _ModListManager.Insert(name: targetFileName, fileSize: new FileInfo(targetFile).Length, archiveFilePath: targetFile, url: returnModel.URL.Value, memo:returnModel.Memo.Value, imagefilepath: imagefile, modName: modName);
 

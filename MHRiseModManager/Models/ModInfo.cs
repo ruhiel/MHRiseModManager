@@ -1,15 +1,10 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
-using System.Data.Linq;
 using System.Data.Linq.Mapping;
 using Reactive.Bindings;
-using System.Windows;
 using MHRiseModManager.ViewModels;
 using System.IO;
-using SevenZip;
 using MHRiseModManager.Utils;
 using System.Reactive.Linq;
 using Reactive.Bindings.Extensions;

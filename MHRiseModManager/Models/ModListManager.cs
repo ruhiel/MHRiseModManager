@@ -135,5 +135,36 @@ namespace MHRiseModManager.Models
 
             return result;
         }
+
+        public List<ModInfoDetail> SelectModFile(int modInfoId)
+        {
+            List<ModInfoDetail> list;
+            using (var con = new SQLiteConnection($"Data Source={Settings.Default.DataBaseFileName}"))
+            {
+                con.Open();
+                using (var context = new DataContext(con))
+                {
+                    var table = context.GetTable<ModInfoDetail>();
+                    list = table.ToList().Where(x => x.ModInfoId == modInfoId).ToList();
+                }
+                con.Close();
+            }
+
+            return list;
+        }
+
+        public void UpdateStatus(int id, Status status)
+        {
+            // コネクションを開いてテーブル作成して閉じる  
+            using (var con = new SQLiteConnection($"Data Source={Settings.Default.DataBaseFileName}"))
+            {
+                con.Open();
+                string sql = $"update modinfo set status = {(int)status} where id = {id}";
+                SQLiteCommand com = new SQLiteCommand(sql, con);
+                com.ExecuteNonQuery();
+
+                con.Close();
+            }
+        }
     }
 }

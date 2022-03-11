@@ -13,6 +13,29 @@ namespace MHRiseModManager.Utils
 {
     public static class Utility
     {
+        public static bool IsEmptyDirectory(string path)
+        {
+            if (!Directory.Exists(path)) return false;
+
+            try
+            {
+                var entries = Directory.GetFileSystemEntries(path);
+                return entries == null || entries.Length == 0;
+            }
+            catch
+            {
+                return false;
+            }
+        }
+
+        public static IEnumerable<List<T>> Re<T>(List<T> arg)
+        {
+            for(int i = arg.Count; i > 0; i--)
+            {
+                yield return arg.GetRange(0, i);
+            }
+        }
+
         public static void ExtractFile(string path, string dir)
         {
             if(Path.GetExtension(path) == ".zip")

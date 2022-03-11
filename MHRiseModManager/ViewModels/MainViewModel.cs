@@ -24,7 +24,7 @@ namespace MHRiseModManager.ViewModels
         public ReactiveCommand CloseCommand { get; } = new ReactiveCommand();
         public ReactiveCommand InstallCommand { get; } = new ReactiveCommand();
 
-        public ReactiveCommand UnstallCommand { get; } = new ReactiveCommand();
+        public ReactiveCommand UnInstallCommand { get; } = new ReactiveCommand();
 
         public ObservableCollection<ModFileTree> ModFileTree { get; set; } = new ObservableCollection<ModFileTree>();
 
@@ -36,7 +36,7 @@ namespace MHRiseModManager.ViewModels
 
         public ReactiveProperty<bool> Installable { get; } = new ReactiveProperty<bool>();
 
-        public ReactiveProperty<bool> Unstallable { get; } = new ReactiveProperty<bool>();
+        public ReactiveProperty<bool> UnInstallable { get; } = new ReactiveProperty<bool>();
 
         public ReactiveProperty<string> NowMemo { get; } = new ReactiveProperty<string>();
 
@@ -85,7 +85,7 @@ namespace MHRiseModManager.ViewModels
 
                     Installable.Value = modInfo.Status == Status.未インストール;
 
-                    Unstallable.Value = modInfo.Status == Status.インストール済;
+                    UnInstallable.Value = modInfo.Status == Status.インストール済;
 
                     NowMemo.Value = modInfo.Memo;
 
@@ -152,6 +152,42 @@ namespace MHRiseModManager.ViewModels
                 }
 
                 _ModListManager.Install(_NowSelectModInfo.Id, files);
+
+                ModFileListReflesh();
+            });
+
+            UnInstallCommand.Subscribe(e =>
+            {
+                var set = new HashSet<string>();
+                var list = _ModListManager.SelectModFile(_NowSelectModInfo.Id);
+                foreach(var item in list)
+                {
+                    set.Add(Path.GetDirectoryName(item.Path));
+
+                    File.Delete(Path.Combine(Settings.Default.GameDirectoryPath, item.Path));
+                }
+
+                var setDir = new HashSet<string>();
+
+                foreach(var item in set)
+                {
+                    var dirList = item.Split(Path.DirectorySeparatorChar).ToList();
+                    foreach( var a in Utility.Re(dirList) )
+                    {
+                        setDir.Add(Path.Combine(a.ToArray()));
+                    }
+                }
+
+                setDir.OrderByDescending(a => a.Length).ToList().ForEach(x =>
+                {
+                    var dir = Path.Combine(Settings.Default.GameDirectoryPath, x);
+                    if(Utility.IsEmptyDirectory(dir))
+                    {
+                        Directory.Delete(dir);
+                    }
+                });
+
+                _ModListManager.UpdateStatus(_NowSelectModInfo.Id, Status.未インストール);
 
                 ModFileListReflesh();
             });
@@ -424,7 +460,7 @@ namespace MHRiseModManager.ViewModels
 
             Installable.Value = false;
 
-            Unstallable.Value = false;
+            UnInstallable.Value = false;
 
             NowMemo.Value = string.Empty;
 

@@ -13,6 +13,16 @@ namespace MHRiseModManager.Utils
 {
     public static class Utility
     {
+        public static string GetOrCreateDirectory(string path)
+        {
+            if (!Directory.Exists(path))
+            {
+                Directory.CreateDirectory(path);
+            }
+
+            return path;
+        }
+
         public static void CleanDirectory(string path)
         {
             var di = new DirectoryInfo(path);

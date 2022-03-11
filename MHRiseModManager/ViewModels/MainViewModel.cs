@@ -120,12 +120,7 @@ namespace MHRiseModManager.ViewModels
                     var itemPath = item.Path;
                     var dir = Path.GetDirectoryName(itemPath);
 
-                    var targetDir = Path.Combine(Settings.Default.GameDirectoryPath, dir);
-
-                    if (!Directory.Exists(targetDir))
-                    {
-                        Directory.CreateDirectory(targetDir);
-                    }
+                    var targetDir = Utility.GetOrCreateDirectory(Path.Combine(Settings.Default.GameDirectoryPath, dir));
 
                     var srcFile = Path.Combine(_NowSelectModInfo.ExtractArchivePath, itemPath);
 
@@ -223,7 +218,6 @@ namespace MHRiseModManager.ViewModels
             });
 
             ModFileListReflesh();
-
         }
 
         private static void CleanCache()
@@ -263,13 +257,7 @@ namespace MHRiseModManager.ViewModels
 
             (dropFile, imagefile) = PreProcess(dropFile);
 
-            var dir = Environment.CurrentDirectory;
-            var cacheDir = Path.Combine(dir, Settings.Default.ModsCacheDirectoryName);
-
-            if (!Directory.Exists(cacheDir))
-            {
-                Directory.CreateDirectory(cacheDir);
-            }
+            var cacheDir = Utility.GetOrCreateDirectory(Path.Combine(Environment.CurrentDirectory, Settings.Default.ModsCacheDirectoryName));
 
             var targetFileName = Path.GetFileName(dropFile);
             var targetFile = Path.Combine(cacheDir, targetFileName);
@@ -308,11 +296,7 @@ namespace MHRiseModManager.ViewModels
             var resultFile = dropFile;
             var imageFile = string.Empty;
 
-            var tempDir = Path.Combine(Path.GetTempPath(), Settings.Default.TempDirectoryName);
-            if (!Directory.Exists(tempDir))
-            {
-                Directory.CreateDirectory(tempDir);
-            }
+            var tempDir = Utility.GetOrCreateDirectory(Path.Combine(Path.GetTempPath(), Settings.Default.TempDirectoryName));
 
             var targetFile = Path.Combine(tempDir, Path.GetFileName(dropFile));
             File.Copy(dropFile, targetFile, true);
@@ -324,8 +308,7 @@ namespace MHRiseModManager.ViewModels
             {
                 var tempFileName = Path.GetRandomFileName();
                 // Luaかつreframeworkがない
-                var reframeworkDir = Path.Combine(tempDir, tempFileName, "reframework");
-                Directory.CreateDirectory(reframeworkDir);
+                var reframeworkDir = Utility.GetOrCreateDirectory(Path.Combine(tempDir, tempFileName, "reframework"));
 
                 var srcDir = Path.Combine(tempDir, Path.GetFileNameWithoutExtension(dropFile));
 
@@ -365,12 +348,7 @@ namespace MHRiseModManager.ViewModels
 
                 var srcSSPath = Path.Combine(Path.GetDirectoryName(iniFilePath), ssFileName);
 
-                var cacheDir = Path.Combine(Environment.CurrentDirectory, Settings.Default.ImageCacheDirectoryName);
-                
-                if (!Directory.Exists(cacheDir))
-                {
-                    Directory.CreateDirectory(cacheDir);
-                }
+                var cacheDir = Utility.GetOrCreateDirectory(Path.Combine(Environment.CurrentDirectory, Settings.Default.ImageCacheDirectoryName));
 
                 var dstSSPath = Path.Combine(cacheDir, $"{Path.GetFileNameWithoutExtension(targetFile)}{Path.GetExtension(ssFileName)}");
 
@@ -385,8 +363,7 @@ namespace MHRiseModManager.ViewModels
                 
                 var tempFileName = Path.GetRandomFileName();
 
-                var targetDir = Path.Combine(tempDir, tempFileName);
-                Directory.CreateDirectory(targetDir);
+                var targetDir = Utility.GetOrCreateDirectory(Path.Combine(tempDir, tempFileName));
 
                 if (di.GetFiles().Any())
                 {
@@ -414,8 +391,7 @@ namespace MHRiseModManager.ViewModels
 
                 var fileInfo = mod.GetFileTree().Find(x => Path.GetExtension(x.Path) == ".pak");
 
-                var targetDir = Path.Combine(tempDir, tempFileName);
-                Directory.CreateDirectory(targetDir);
+                var targetDir = Utility.GetOrCreateDirectory(Path.Combine(tempDir, tempFileName));
 
                 var srcFile = Path.Combine(tempDir, Path.GetFileNameWithoutExtension(dropFile), fileInfo.Path);
 

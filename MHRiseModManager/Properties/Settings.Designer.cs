@@ -82,5 +82,17 @@ namespace MHRiseModManager.Properties {
                 this["ImageCacheDirectoryName"] = value;
             }
         }
+        
+        [global::System.Configuration.UserScopedSettingAttribute()]
+        [global::System.Diagnostics.DebuggerNonUserCodeAttribute()]
+        [global::System.Configuration.DefaultSettingValueAttribute("BackUpCache")]
+        public string BackUpDirectoryName {
+            get {
+                return ((string)(this["BackUpDirectoryName"]));
+            }
+            set {
+                this["BackUpDirectoryName"] = value;
+            }
+        }
     }
 }

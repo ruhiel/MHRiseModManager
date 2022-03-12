@@ -36,10 +36,18 @@
     </i:Interaction.Triggers>
     <Grid>
         <Grid.RowDefinitions>
+            <RowDefinition Height="Auto"/>
             <RowDefinition Height="40"/>
             <RowDefinition Height="*"/>
         </Grid.RowDefinitions>
-        <Grid Margin="5" Grid.Row="0">
+        <Menu  Grid.Row="0" DockPanel.Dock="Top">
+            <MenuItem Header="ファイル(_F)">
+                <MenuItem Header="バックアップ" Command="{Binding BackUpCommand}"/>
+                <MenuItem Header="リストア" Command="{Binding RestoreCommand}"/>
+                <MenuItem Header="終了" Command="{Binding MenuCloseCommand}"  CommandParameter="{Binding RelativeSource={RelativeSource Mode=FindAncestor, AncestorType=Window}}"/>
+            </MenuItem>
+        </Menu>
+        <Grid Margin="5" Grid.Row="1">
             <Grid.ColumnDefinitions>
                 <ColumnDefinition Width="0.5*"/>
                 <ColumnDefinition Width="9*"/>
@@ -49,7 +57,7 @@
             <TextBox VerticalContentAlignment="Center" VerticalAlignment="Center" Padding="0" Grid.Column="1" Text="{Binding GameDirectoryPath.Value}"/>
             <Button VerticalAlignment="Center" Padding="0" Margin="0" Grid.Column="2" Width="100" Content="開く" Command="{Binding OpenGameFolderCommand}"/>
         </Grid>
-        <Grid Grid.Row="1">
+        <Grid Grid.Row="2">
             <Grid.ColumnDefinitions>
                 <ColumnDefinition Width="2*"/>
                 <ColumnDefinition Width="1*"/>
@@ -124,13 +132,14 @@
                     <Grid.ColumnDefinitions>
                         <ColumnDefinition />
                         <ColumnDefinition />
+                        <ColumnDefinition />
                     </Grid.ColumnDefinitions>
                     <Grid.RowDefinitions>
                         <RowDefinition Height="3*"/>
                         <RowDefinition Height="2*"/>
                         <RowDefinition Height="*"/>
                     </Grid.RowDefinitions>
-                    <StackPanel Grid.Row="0" Grid.Column="0" Grid.ColumnSpan="2">
+                    <StackPanel Grid.Row="0" Grid.Column="0" Grid.ColumnSpan="3">
                         <WrapPanel>
                             <Label Content="パス：" Margin="0,0,0,0" Padding="3"/>
                             <Label Padding="3">
@@ -158,11 +167,12 @@
                             </Label>
                         </WrapPanel>
                     </StackPanel>
-                    <StackPanel Grid.Row="1" Grid.Column="0" Grid.ColumnSpan="2">
+                    <StackPanel Grid.Row="1" Grid.Column="0" Grid.ColumnSpan="3">
                         <Image Source="{Binding ModImagePath.Value}"/>
                     </StackPanel>
                     <Button Margin ="5" Grid.Row="2" Grid.Column="0" Content="インストール" IsEnabled="{Binding Installable.Value}" Command="{Binding InstallCommand}"/>
                     <Button Margin ="5" Grid.Row="2" Grid.Column="1" Content="アンインストール" IsEnabled="{Binding UnInstallable.Value}" Command="{Binding UnInstallCommand}"/>
+                    <Button Margin ="5" Grid.Row="2" Grid.Column="2" Content="登録削除" IsEnabled="{Binding Installable.Value}" Command="{Binding DeleteCommand}"/>
                 </Grid>
             </GroupBox>
         </Grid>

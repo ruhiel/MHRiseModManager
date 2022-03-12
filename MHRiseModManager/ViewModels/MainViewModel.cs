@@ -56,6 +56,11 @@ namespace MHRiseModManager.ViewModels
         public ReactiveCommand<object> OpenGameFolderCommand { get; } = new ReactiveCommand<Object>();
         public IDialogCoordinator MahAppsDialogCoordinator { get; set; }
 
+        public ReactiveCommand DeleteCommand { get; } = new ReactiveCommand();
+        public ReactiveCommand BackUpCommand { get; } = new ReactiveCommand();
+        public ReactiveCommand RestoreCommand { get; } = new ReactiveCommand();
+        public ReactiveCommand MenuCloseCommand { get; } = new ReactiveCommand();
+
         public MainViewModel()
         {
             FileDropCommand = new ReactiveCommand<DragEventArgs>().AddTo(Disposable);
@@ -76,8 +81,6 @@ namespace MHRiseModManager.ViewModels
                 if(modInfo != null)
                 {
                     _NowSelectModInfo = modInfo;
-
-                    var archive = modInfo.ExtractArchivePath;
 
                     NowModPath.Value = modInfo.Name;
 
@@ -217,6 +220,30 @@ namespace MHRiseModManager.ViewModels
                 }
             });
 
+            BackUpCommand.Subscribe(e =>
+            {
+                var path = Utility.GetOrCreateDirectory(Path.Combine(Path.GetTempPath(), Settings.Default.TempDirectoryName, Path.GetRandomFileName()));
+
+                var di = new DirectoryInfo(Settings.Default.GameDirectoryPath);
+                foreach (var f in di.GetFiles())
+                {
+                    File.Copy(f.FullName, Path.Combine(path, f.Name));
+                }
+
+                foreach (var d in di.GetDirectories())
+                {
+                    Utility.CopyDirectory(d.FullName, Path.Combine(path, d.Name));
+                }
+
+                var archiveName = $"{DateTime.Now.ToString("yyyyMMddHHmmss")}.zip";
+
+                var backUpDir = Utility.GetOrCreateDirectory(Path.Combine(Environment.CurrentDirectory, Settings.Default.BackUpDirectoryName));
+
+                Utility.CompressionFile(path, Path.Combine(backUpDir, archiveName));
+            });
+
+            MenuCloseCommand.Subscribe(x => ((Window)x).Close());
+
             ModFileListReflesh();
         }
 
@@ -271,24 +298,9 @@ namespace MHRiseModManager.ViewModels
 
             ModFileListReflesh();
 
-            CleanDirectory(Path.Combine(Path.GetTempPath(), Settings.Default.TempDirectoryName));
+            Utility.CleanDirectory(Path.Combine(Path.GetTempPath(), Settings.Default.TempDirectoryName));
 
             await MahAppsDialogCoordinator.ShowMessageAsync(this, "MHRiseModManager", "Modを新規登録しました。");
-        }
-
-        private void CleanDirectory(string path)
-        {
-            var di = new DirectoryInfo(path);
-
-            foreach (var f in di.GetFiles())
-            {
-                File.Delete(f.FullName);
-            }
-
-            foreach (var d in di.GetDirectories())
-            {
-                Directory.Delete(d.FullName, true);
-            }
         }
 
         private (string, string) PreProcess(string dropFile)

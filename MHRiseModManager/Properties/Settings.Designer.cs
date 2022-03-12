@@ -94,5 +94,17 @@ namespace MHRiseModManager.Properties {
                 this["BackUpDirectoryName"] = value;
             }
         }
+        
+        [global::System.Configuration.UserScopedSettingAttribute()]
+        [global::System.Diagnostics.DebuggerNonUserCodeAttribute()]
+        [global::System.Configuration.DefaultSettingValueAttribute("Resource")]
+        public string ResourceDirectoryName {
+            get {
+                return ((string)(this["ResourceDirectoryName"]));
+            }
+            set {
+                this["ResourceDirectoryName"] = value;
+            }
+        }
     }
 }

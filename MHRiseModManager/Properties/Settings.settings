@@ -20,5 +20,8 @@
     <Setting Name="BackUpDirectoryName" Type="System.String" Scope="User">
       <Value Profile="(Default)">BackUpCache</Value>
     </Setting>
+    <Setting Name="ResourceDirectoryName" Type="System.String" Scope="User">
+      <Value Profile="(Default)">Resource</Value>
+    </Setting>
   </Settings>
 </SettingsFile>

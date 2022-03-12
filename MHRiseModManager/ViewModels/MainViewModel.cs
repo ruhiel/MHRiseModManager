@@ -15,6 +15,7 @@ using System.Windows.Controls;
 using MahApps.Metro.Controls.Dialogs;
 using MahApps.Metro.Controls;
 using System.Threading.Tasks;
+using System.Reflection;
 
 namespace MHRiseModManager.ViewModels
 {
@@ -57,9 +58,11 @@ namespace MHRiseModManager.ViewModels
         public IDialogCoordinator MahAppsDialogCoordinator { get; set; }
 
         public ReactiveCommand DeleteCommand { get; } = new ReactiveCommand();
-        public ReactiveCommand BackUpCommand { get; } = new ReactiveCommand();
-        public ReactiveCommand RestoreCommand { get; } = new ReactiveCommand();
+        public AsyncReactiveCommand BackUpCommand { get; } = new AsyncReactiveCommand();
+        public AsyncReactiveCommand RestoreCommand { get; } = new AsyncReactiveCommand();
         public ReactiveCommand MenuCloseCommand { get; } = new ReactiveCommand();
+
+        public AsyncReactiveCommand SettingResetCommand { get; } = new AsyncReactiveCommand();
 
         public MainViewModel()
         {
@@ -96,7 +99,7 @@ namespace MHRiseModManager.ViewModels
 
                     if (string.IsNullOrEmpty(modInfo.ImageFilePath))
                     {
-                        ModImagePath.Value = Path.Combine(Environment.CurrentDirectory, Settings.Default.ImageCacheDirectoryName, "no_image_yoko.jpg"); 
+                        ModImagePath.Value = Path.Combine(Environment.CurrentDirectory, Settings.Default.ResourceDirectoryName, "no_image_yoko.jpg"); 
                     }
                     else
                     {
@@ -220,7 +223,7 @@ namespace MHRiseModManager.ViewModels
                 }
             });
 
-            BackUpCommand.Subscribe(e =>
+            BackUpCommand.Subscribe(async e =>
             {
                 var path = Utility.GetOrCreateDirectory(Path.Combine(Path.GetTempPath(), Settings.Default.TempDirectoryName, Path.GetRandomFileName()));
 
@@ -240,6 +243,66 @@ namespace MHRiseModManager.ViewModels
                 var backUpDir = Utility.GetOrCreateDirectory(Path.Combine(Environment.CurrentDirectory, Settings.Default.BackUpDirectoryName));
 
                 Utility.CompressionFile(path, Path.Combine(backUpDir, archiveName));
+
+                await MahAppsDialogCoordinator.ShowMessageAsync(this, Assembly.GetEntryAssembly().GetName().Name, "バックアップを完了しました。");
+            });
+
+            RestoreCommand.Subscribe(async e =>
+            {
+                var backUpDir = Utility.GetOrCreateDirectory(Path.Combine(Environment.CurrentDirectory, Settings.Default.BackUpDirectoryName));
+
+                if(!Directory.EnumerateFileSystemEntries(backUpDir).Any())
+                {
+                    await MahAppsDialogCoordinator.ShowMessageAsync(this, Assembly.GetEntryAssembly().GetName().Name, "バックアップファイルがありません。先にバックアップしてください。");
+                    return;
+                }
+
+                Utility.CleanDirectory(Settings.Default.GameDirectoryPath);
+
+                var di = new DirectoryInfo(backUpDir);
+                var fi = di.GetFiles().OrderByDescending(x => x.LastWriteTime).Last();
+
+                var targetDir = Path.Combine(Path.GetTempPath(), Path.GetFileNameWithoutExtension(fi.Name));
+
+                Utility.ExtractFile(fi.FullName, targetDir);
+
+                Utility.CopyDirectory(targetDir, Settings.Default.GameDirectoryPath);
+
+                Directory.Delete(targetDir, true);
+
+                await MahAppsDialogCoordinator.ShowMessageAsync(this, Assembly.GetEntryAssembly().GetName().Name, "リストアを完了しました。");
+            });
+
+            SettingResetCommand.Subscribe(async e =>
+            {
+                var metroDialogSettings = new MetroDialogSettings()
+                {
+                    AffirmativeButtonText = "はい",
+                    NegativeButtonText = "いいえ",
+                    AnimateHide = true,
+                    AnimateShow = true,
+                    ColorScheme = MetroDialogColorScheme.Theme,
+                };
+
+                var diagResult = await MahAppsDialogCoordinator.ShowMessageAsync(this, Assembly.GetEntryAssembly().GetName().Name, "設定の初期化は全てのModのアンインストール後をおすすめします。\r\nよろしいですか？", MessageDialogStyle.AffirmativeAndNegative, metroDialogSettings);
+
+                if(MessageDialogResult.Negative == diagResult)
+                {
+                    return;
+                }
+
+                File.Delete(Path.Combine(Environment.CurrentDirectory, Settings.Default.DataBaseFileName));
+
+                Utility.CleanDirectory(Path.Combine(Environment.CurrentDirectory, Settings.Default.ModsCacheDirectoryName));
+
+                Utility.CleanDirectory(Path.Combine(Environment.CurrentDirectory, Settings.Default.ImageCacheDirectoryName));
+
+                Utility.CleanDirectory(Path.Combine(Path.GetTempPath(), Settings.Default.TempDirectoryName));
+
+                await MahAppsDialogCoordinator.ShowMessageAsync(this, Assembly.GetEntryAssembly().GetName().Name, "設定を初期化しました。アプリケーションを再起動します。");
+
+                Application.Current.Shutdown();
+                System.Windows.Forms.Application.Restart();
             });
 
             MenuCloseCommand.Subscribe(x => ((Window)x).Close());
@@ -300,7 +363,7 @@ namespace MHRiseModManager.ViewModels
 
             Utility.CleanDirectory(Path.Combine(Path.GetTempPath(), Settings.Default.TempDirectoryName));
 
-            await MahAppsDialogCoordinator.ShowMessageAsync(this, "MHRiseModManager", "Modを新規登録しました。");
+            await MahAppsDialogCoordinator.ShowMessageAsync(this, Assembly.GetEntryAssembly().GetName().Name, "Modを新規登録しました。");
         }
 
         private (string, string) PreProcess(string dropFile)

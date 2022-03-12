@@ -2,7 +2,9 @@
              xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
              xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
              xmlns:local="clr-namespace:MHRiseModManager"
-             StartupUri="Views/MainWindow.xaml">
+             xmlns:Controls="http://metro.mahapps.com/winfx/xaml/controls"
+             StartupUri="Views/MainWindow.xaml"
+             xmlns:mah="clr-namespace:MahApps.Metro.Controls;assembly=MahApps.Metro">
     <Application.Resources>
         <ResourceDictionary>
             <ResourceDictionary.MergedDictionaries>
@@ -12,6 +14,9 @@
                 <!-- Theme setting -->
                 <ResourceDictionary Source="pack://application:,,,/MahApps.Metro;component/Styles/Themes/Light.Blue.xaml" />
             </ResourceDictionary.MergedDictionaries>
+            <Style TargetType="GroupBox" BasedOn="{StaticResource MahApps.Styles.GroupBox}">
+                <Setter Property="Controls:ControlsHelper.ContentCharacterCasing" Value="Normal"/>
+            </Style>
         </ResourceDictionary>
     </Application.Resources>
 </Application>

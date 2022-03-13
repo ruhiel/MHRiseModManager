@@ -355,7 +355,7 @@ namespace MHRiseModManager.ViewModels
 
             Utility.CleanDirectory(Path.Combine(Path.GetTempPath(), Settings.Default.TempDirectoryName));
 
-            _ModListManager.Insert(name: targetFileName, fileSize: new FileInfo(targetFile).Length, archiveFilePath: targetFile, url: returnModel.URL.Value, memo:returnModel.Memo.Value, imagefilepath: imagefile, modName: modName);
+            _ModListManager.Insert(name: targetFileName, fileSize: new FileInfo(targetFile).Length, archiveFilePath: targetFile.Substring(Environment.CurrentDirectory.Length + 1), url: returnModel.URL.Value, memo:returnModel.Memo.Value, imagefilepath: imagefile, modName: modName);
 
             ModFileListReflesh();
 

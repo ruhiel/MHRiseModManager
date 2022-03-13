@@ -99,13 +99,14 @@ namespace MHRiseModManager.Models
         {
             get
             {
-                var targetDir = Path.Combine(Path.GetDirectoryName(ArchiveFilePath), Path.GetFileNameWithoutExtension(ArchiveFilePath));
+                var archiveFile = Path.Combine(Environment.CurrentDirectory, ArchiveFilePath);
+                var targetDir = Path.Combine(Path.GetDirectoryName(archiveFile), Path.GetFileNameWithoutExtension(archiveFile));
 
                 if (!Directory.Exists(targetDir))
                 {
                     Directory.CreateDirectory(targetDir);
 
-                    Utility.ExtractFile(ArchiveFilePath, targetDir);
+                    Utility.ExtractFile(archiveFile, targetDir);
                 }
                 return targetDir;
             }

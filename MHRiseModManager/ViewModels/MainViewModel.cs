@@ -24,44 +24,28 @@ namespace MHRiseModManager.ViewModels
         private CompositeDisposable Disposable { get; } = new CompositeDisposable();
         public ReactiveCommand CloseCommand { get; } = new ReactiveCommand();
         public ReactiveCommand InstallCommand { get; } = new ReactiveCommand();
-
         public ReactiveCommand UnInstallCommand { get; } = new ReactiveCommand();
-
         public ObservableCollection<ModFileTree> ModFileTree { get; set; } = new ObservableCollection<ModFileTree>();
-
         public ReactiveProperty<string> GameDirectoryPath { get; } = new ReactiveProperty<string>(Settings.Default.GameDirectoryPath);
-
         public ReactiveProperty<string> NowModPath { get; } = new ReactiveProperty<string>();
         public ReactiveProperty<long?> NowModSize { get; } = new ReactiveProperty<long?>();
         public ReactiveProperty<string> ModImagePath { get; } = new ReactiveProperty<string>();
-
         public ReactiveProperty<bool> Installable { get; } = new ReactiveProperty<bool>();
-
         public ReactiveProperty<bool> UnInstallable { get; } = new ReactiveProperty<bool>();
-
         public ReactiveProperty<string> NowMemo { get; } = new ReactiveProperty<string>();
-
         public ReactiveCommand<DragEventArgs> FileDropCommand { get; private set; }
-
         public ReactiveCommand<(object sender, EventArgs args)> SelectionChanged { get; private set;} = new ReactiveCommand<(object sender, EventArgs args)>();
-
         private ModListManager _ModListManager = new ModListManager();
-
         private ModInfo _NowSelectModInfo;
-
         public ObservableCollection<ModInfo> ModInfoList { get; set; } = new ObservableCollection<ModInfo>();
-
         public ReactiveProperty<string> NowModURL { get; } = new ReactiveProperty<string>();
         public ReactiveCommand<Object> NavigateCommand { get; } = new ReactiveCommand<Object>();
-
         public ReactiveCommand<object> OpenGameFolderCommand { get; } = new ReactiveCommand<Object>();
         public IDialogCoordinator MahAppsDialogCoordinator { get; set; }
-
         public ReactiveCommand DeleteCommand { get; } = new ReactiveCommand();
         public AsyncReactiveCommand BackUpCommand { get; } = new AsyncReactiveCommand();
         public AsyncReactiveCommand RestoreCommand { get; } = new AsyncReactiveCommand();
         public ReactiveCommand MenuCloseCommand { get; } = new ReactiveCommand();
-
         public AsyncReactiveCommand SettingResetCommand { get; } = new AsyncReactiveCommand();
 
         public MainViewModel()
@@ -136,7 +120,7 @@ namespace MHRiseModManager.ViewModels
                     {
                         var num = _ModListManager.SelectLastPakNo();
 
-                        var fileName = $"re_chunk_000.pak.patch_{num:000}.pak";
+                        var fileName = $"re_chunk_000.pak.patch_{_NowSelectModInfo.Id:000000}.pak";
 
                         targetFile = Path.Combine(Settings.Default.GameDirectoryPath, fileName);
 
@@ -152,7 +136,13 @@ namespace MHRiseModManager.ViewModels
                     files.Add(itemPath);
                 }
 
-                _ModListManager.Install(_NowSelectModInfo.Id, files);
+                _ModListManager.Install(_NowSelectModInfo.Id, files, _NowSelectModInfo.Category);
+                
+                if (_NowSelectModInfo.Category == Category.Pak)
+                {
+                    // Pakファイル名洗い替え
+                    _ModListManager.RefleshPakFileName();
+                }
 
                 ModFileListReflesh();
             });
@@ -182,13 +172,19 @@ namespace MHRiseModManager.ViewModels
                 setDir.OrderByDescending(a => a.Length).ToList().ForEach(x =>
                 {
                     var dir = Path.Combine(Settings.Default.GameDirectoryPath, x);
-                    if(Utility.IsEmptyDirectory(dir))
+                    if(Utility.IsEmptyDirectory(dir) && !dir.Equals(Settings.Default.GameDirectoryPath))
                     {
                         Directory.Delete(dir);
                     }
                 });
 
-                _ModListManager.UpdateStatus(_NowSelectModInfo.Id, Status.未インストール);
+                _ModListManager.UpdateStatus(_NowSelectModInfo.Id, Status.未インストール, _NowSelectModInfo.Category);
+
+                if(_NowSelectModInfo.Category == Category.Pak)
+                {
+                    // Pakファイル名洗い替え
+                    _ModListManager.RefleshPakFileName();
+                }
 
                 ModFileListReflesh();
             });
@@ -340,6 +336,8 @@ namespace MHRiseModManager.ViewModels
 
             dialog.ShowDialog();
 
+            var controller = await MahAppsDialogCoordinator.ShowProgressAsync(this, Assembly.GetEntryAssembly().GetName().Name, "Modの新規登録中...");
+
             var returnModel = dialog.DataContext as InstallDialogViewModel;
 
             var dropFile = dropFiles[0];
@@ -363,6 +361,8 @@ namespace MHRiseModManager.ViewModels
 
             Utility.CleanDirectory(Path.Combine(Path.GetTempPath(), Settings.Default.TempDirectoryName));
 
+            await controller.CloseAsync();
+
             await MahAppsDialogCoordinator.ShowMessageAsync(this, Assembly.GetEntryAssembly().GetName().Name, "Modを新規登録しました。");
         }
 
@@ -377,7 +377,6 @@ namespace MHRiseModManager.ViewModels
             File.Copy(dropFile, targetFile, true);
 
             var mod = new ModInfo(id: 1, name: "", status: Status.未インストール, fileSize: new FileInfo(targetFile).Length, dateCreated: DateTime.Now, category: Category.Lua, archiveFilePath: targetFile, url: "", memo:"");
-
 
             if(mod.GetNewCategory() == Category.Lua && !mod.GetFileTree().Any(x => !x.IsFile && x.Name == "reframework"))
             {

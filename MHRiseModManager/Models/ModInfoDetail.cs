@@ -28,19 +28,19 @@ namespace MHRiseModManager.Models
             get => _ModInfoId;
             set => SetProperty(ref _ModInfoId, value);
         }
-        [Column(Name = "path", CanBeNull = false, DbType = "TEXT", IsPrimaryKey = false)]
+        [Column(Name = "path", CanBeNull = true, DbType = "TEXT", IsPrimaryKey = false)]
         private string _Path;
         public string Path
         {
             get => _Path;
             set => SetProperty(ref _Path, value);
         }
-        [Column(Name = "delflg", CanBeNull = false, DbType = "INT", IsPrimaryKey = false)]
-        private int _Delflg;
-        public int Delflg
+        [Column(Name = "pakpath", CanBeNull = true, DbType = "TEXT", IsPrimaryKey = false)]
+        private string _PakPath;
+        public string PakPath
         {
-            get => _Delflg;
-            set => SetProperty(ref _Delflg, value);
+            get => _PakPath;
+            set => SetProperty(ref _PakPath, value);
         }
         public ModInfoDetail() { }
     }

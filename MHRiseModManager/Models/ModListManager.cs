@@ -182,6 +182,24 @@ namespace MHRiseModManager.Models
             }
         }
 
+        public void Delete(int id)
+        {
+            // コネクションを開いてテーブル作成して閉じる  
+            using (var con = new SQLiteConnection($"Data Source={Settings.Default.DataBaseFileName}"))
+            {
+                con.Open();
+                var sql = $"delete from modinfodetail where modinfoid = {id}";
+                var com = new SQLiteCommand(sql, con);
+                com.ExecuteNonQuery();
+
+                sql = $"delete from modinfo where id = {id}";
+                com = new SQLiteCommand(sql, con);
+                com.ExecuteNonQuery();
+
+                con.Close();
+            }
+        }
+
         public void RefleshPakFileName()
         {
             // コネクションを開いてテーブル作成して閉じる  

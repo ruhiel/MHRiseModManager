@@ -42,12 +42,11 @@ namespace MHRiseModManager.ViewModels
         public ReactiveCommand<Object> NavigateCommand { get; } = new ReactiveCommand<Object>();
         public ReactiveCommand<object> OpenGameFolderCommand { get; } = new ReactiveCommand<Object>();
         public IDialogCoordinator MahAppsDialogCoordinator { get; set; }
-        public ReactiveCommand DeleteCommand { get; } = new ReactiveCommand();
+        public AsyncReactiveCommand DeleteCommand { get; } = new AsyncReactiveCommand();
         public AsyncReactiveCommand BackUpCommand { get; } = new AsyncReactiveCommand();
         public AsyncReactiveCommand RestoreCommand { get; } = new AsyncReactiveCommand();
         public ReactiveCommand MenuCloseCommand { get; } = new ReactiveCommand();
         public AsyncReactiveCommand SettingResetCommand { get; } = new AsyncReactiveCommand();
-
         public MainViewModel()
         {
             FileDropCommand = new ReactiveCommand<DragEventArgs>().AddTo(Disposable);
@@ -299,6 +298,39 @@ namespace MHRiseModManager.ViewModels
 
                 Application.Current.Shutdown();
                 System.Windows.Forms.Application.Restart();
+            });
+
+            DeleteCommand.Subscribe(async e =>
+            {
+                var metroDialogSettings = new MetroDialogSettings()
+                {
+                    AffirmativeButtonText = "はい",
+                    NegativeButtonText = "いいえ",
+                    AnimateHide = true,
+                    AnimateShow = true,
+                    ColorScheme = MetroDialogColorScheme.Theme,
+                };
+
+                var diagResult = await MahAppsDialogCoordinator.ShowMessageAsync(this, Assembly.GetEntryAssembly().GetName().Name, "Modの登録を削除します。よろしいですか？", MessageDialogStyle.AffirmativeAndNegative, metroDialogSettings);
+
+                if (MessageDialogResult.Negative == diagResult)
+                {
+                    return;
+                }
+
+                var file = Path.Combine(Environment.CurrentDirectory, _NowSelectModInfo.ArchiveFilePath);
+
+                var dir = Path.Combine(Environment.CurrentDirectory, Path.GetDirectoryName(_NowSelectModInfo.ArchiveFilePath), Path.GetFileNameWithoutExtension(_NowSelectModInfo.ArchiveFilePath));
+
+                File.Delete(file);
+
+                Directory.Delete(dir, true);
+
+                _ModListManager.Delete(_NowSelectModInfo.Id);
+
+                await MahAppsDialogCoordinator.ShowMessageAsync(this, Assembly.GetEntryAssembly().GetName().Name, "Modの登録を削除しました。");
+
+                ModFileListReflesh();
             });
 
             MenuCloseCommand.Subscribe(x => ((Window)x).Close());

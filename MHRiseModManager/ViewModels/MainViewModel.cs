@@ -220,25 +220,42 @@ namespace MHRiseModManager.ViewModels
 
             BackUpCommand.Subscribe(async e =>
             {
-                var path = Utility.GetOrCreateDirectory(Path.Combine(Path.GetTempPath(), Settings.Default.TempDirectoryName, Path.GetRandomFileName()));
+                ProgressDialogController objController = await MahAppsDialogCoordinator.ShowProgressAsync(this, Assembly.GetEntryAssembly().GetName().Name, "バックアップ中");
 
-                var di = new DirectoryInfo(Settings.Default.GameDirectoryPath);
-                foreach (var f in di.GetFiles())
+                objController.Minimum = 0;
+                
+                await Task.Run(() =>
                 {
-                    File.Copy(f.FullName, Path.Combine(path, f.Name));
-                }
+                    var path = Utility.GetOrCreateDirectory(Path.Combine(Path.GetTempPath(), Settings.Default.TempDirectoryName, Path.GetRandomFileName()));
 
-                foreach (var d in di.GetDirectories())
-                {
-                    Utility.CopyDirectory(d.FullName, Path.Combine(path, d.Name));
-                }
+                    var di = new DirectoryInfo(Settings.Default.GameDirectoryPath);
+                    var max = di.GetFiles().Length + di.GetDirectories().Length;
+                    objController.Maximum = max;
+                    var i = 1;
+                    foreach (var f in di.GetFiles())
+                    {
+                        File.Copy(f.FullName, Path.Combine(path, f.Name));
+                        objController.SetProgress(i++);
+                        objController.SetMessage($"バックアップ中:{i} / {max}");
+                    }
 
-                var archiveName = $"{DateTime.Now.ToString("yyyyMMddHHmmss")}.zip";
+                    foreach (var d in di.GetDirectories())
+                    {
+                        Utility.CopyDirectory(d.FullName, Path.Combine(path, d.Name));
+                        objController.SetProgress(i++);
+                        objController.SetMessage($"バックアップ中:{i} / {max}");
+                    }
 
-                var backUpDir = Utility.GetOrCreateDirectory(Path.Combine(Environment.CurrentDirectory, Settings.Default.BackUpDirectoryName));
+                    var archiveName = $"{DateTime.Now.ToString("yyyyMMddHHmmss")}.zip";
 
-                Utility.CompressionFile(path, Path.Combine(backUpDir, archiveName));
+                    var backUpDir = Utility.GetOrCreateDirectory(Path.Combine(Environment.CurrentDirectory, Settings.Default.BackUpDirectoryName));
 
+                    objController.SetMessage($"圧縮中");
+                    Utility.CompressionFile(path, Path.Combine(backUpDir, archiveName));
+
+                    objController.CloseAsync();
+                });
+            
                 await MahAppsDialogCoordinator.ShowMessageAsync(this, Assembly.GetEntryAssembly().GetName().Name, "バックアップを完了しました。");
             });
 
@@ -252,18 +269,26 @@ namespace MHRiseModManager.ViewModels
                     return;
                 }
 
-                Utility.CleanDirectory(Settings.Default.GameDirectoryPath);
+                ProgressDialogController objController = await MahAppsDialogCoordinator.ShowProgressAsync(this, Assembly.GetEntryAssembly().GetName().Name, "リストア中");
 
-                var di = new DirectoryInfo(backUpDir);
-                var fi = di.GetFiles().OrderByDescending(x => x.LastWriteTime).Last();
+                await Task.Run(() =>
+                {
+                    Utility.CleanDirectory(Settings.Default.GameDirectoryPath);
 
-                var targetDir = Path.Combine(Path.GetTempPath(), Path.GetFileNameWithoutExtension(fi.Name));
+                    var di = new DirectoryInfo(backUpDir);
+                    var fi = di.GetFiles().OrderByDescending(x => x.LastWriteTime).Last();
 
-                Utility.ExtractFile(fi.FullName, targetDir);
+                    var targetDir = Path.Combine(Path.GetTempPath(), Path.GetFileNameWithoutExtension(fi.Name));
 
-                Utility.CopyDirectory(targetDir, Settings.Default.GameDirectoryPath);
+                    Utility.ExtractFile(fi.FullName, targetDir);
 
-                Directory.Delete(targetDir, true);
+                    Utility.CopyDirectory(targetDir, Settings.Default.GameDirectoryPath);
+
+                    Directory.Delete(targetDir, true);
+
+                    objController.CloseAsync();
+                });
+
 
                 await MahAppsDialogCoordinator.ShowMessageAsync(this, Assembly.GetEntryAssembly().GetName().Name, "リストアを完了しました。");
             });
@@ -370,30 +395,33 @@ namespace MHRiseModManager.ViewModels
 
             var controller = await MahAppsDialogCoordinator.ShowProgressAsync(this, Assembly.GetEntryAssembly().GetName().Name, "Modの新規登録中...");
 
-            var returnModel = dialog.DataContext as InstallDialogViewModel;
+            await Task.Run(() =>
+            {
+                var returnModel = dialog.DataContext as InstallDialogViewModel;
 
-            var dropFile = dropFiles[0];
-            string imagefile = null;
+                var dropFile = dropFiles[0];
+                string imagefile = null;
 
-            (dropFile, imagefile) = PreProcess(dropFile);
+                (dropFile, imagefile) = PreProcess(dropFile);
 
-            var cacheDir = Utility.GetOrCreateDirectory(Path.Combine(Environment.CurrentDirectory, Settings.Default.ModsCacheDirectoryName));
+                var cacheDir = Utility.GetOrCreateDirectory(Path.Combine(Environment.CurrentDirectory, Settings.Default.ModsCacheDirectoryName));
 
-            var targetFileName = Path.GetFileName(dropFile);
-            var targetFile = Path.Combine(cacheDir, targetFileName);
-            var modName = string.IsNullOrEmpty(returnModel.Name.Value) ? null : returnModel.Name.Value;
+                var targetFileName = Path.GetFileName(dropFile);
+                var targetFile = Path.Combine(cacheDir, targetFileName);
+                var modName = string.IsNullOrEmpty(returnModel.Name.Value) ? null : returnModel.Name.Value;
 
-            File.Copy(dropFile, targetFile, true);
+                File.Copy(dropFile, targetFile, true);
 
-            Utility.CleanDirectory(Path.Combine(Path.GetTempPath(), Settings.Default.TempDirectoryName));
+                Utility.CleanDirectory(Path.Combine(Path.GetTempPath(), Settings.Default.TempDirectoryName));
 
-            _ModListManager.Insert(name: targetFileName, fileSize: new FileInfo(targetFile).Length, archiveFilePath: targetFile.Substring(Environment.CurrentDirectory.Length + 1), url: returnModel.URL.Value, memo:returnModel.Memo.Value, imagefilepath: imagefile, modName: modName);
+                _ModListManager.Insert(name: targetFileName, fileSize: new FileInfo(targetFile).Length, archiveFilePath: targetFile.Substring(Environment.CurrentDirectory.Length + 1), url: returnModel.URL.Value, memo: returnModel.Memo.Value, imagefilepath: imagefile, modName: modName);
 
-            ModFileListReflesh();
+                ModFileListReflesh();
 
-            Utility.CleanDirectory(Path.Combine(Path.GetTempPath(), Settings.Default.TempDirectoryName));
+                Utility.CleanDirectory(Path.Combine(Path.GetTempPath(), Settings.Default.TempDirectoryName));
 
-            await controller.CloseAsync();
+                controller.CloseAsync();
+            });
 
             await MahAppsDialogCoordinator.ShowMessageAsync(this, Assembly.GetEntryAssembly().GetName().Name, "Modを新規登録しました。");
         }

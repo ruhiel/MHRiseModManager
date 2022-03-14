@@ -229,33 +229,27 @@ namespace MHRiseModManager.ViewModels
                     var path = Utility.GetOrCreateDirectory(Path.Combine(Path.GetTempPath(), Settings.Default.TempDirectoryName, Path.GetRandomFileName()));
 
                     var di = new DirectoryInfo(Settings.Default.GameDirectoryPath);
-                    var max = di.GetFiles().Length + di.GetDirectories().Length;
-                    objController.Maximum = max;
-                    var i = 1;
+
                     foreach (var f in di.GetFiles())
                     {
                         File.Copy(f.FullName, Path.Combine(path, f.Name));
-                        objController.SetProgress(i++);
-                        objController.SetMessage($"バックアップ中:{i} / {max}");
                     }
 
                     foreach (var d in di.GetDirectories())
                     {
                         Utility.CopyDirectory(d.FullName, Path.Combine(path, d.Name));
-                        objController.SetProgress(i++);
-                        objController.SetMessage($"バックアップ中:{i} / {max}");
                     }
 
                     var archiveName = $"{DateTime.Now.ToString("yyyyMMddHHmmss")}.zip";
 
                     var backUpDir = Utility.GetOrCreateDirectory(Path.Combine(Environment.CurrentDirectory, Settings.Default.BackUpDirectoryName));
 
-                    objController.SetMessage($"圧縮中");
                     Utility.CompressionFile(path, Path.Combine(backUpDir, archiveName));
 
-                    objController.CloseAsync();
                 });
-            
+
+                await objController.CloseAsync();
+
                 await MahAppsDialogCoordinator.ShowMessageAsync(this, Assembly.GetEntryAssembly().GetName().Name, "バックアップを完了しました。");
             });
 
@@ -269,7 +263,7 @@ namespace MHRiseModManager.ViewModels
                     return;
                 }
 
-                ProgressDialogController objController = await MahAppsDialogCoordinator.ShowProgressAsync(this, Assembly.GetEntryAssembly().GetName().Name, "リストア中");
+                var objController = await MahAppsDialogCoordinator.ShowProgressAsync(this, Assembly.GetEntryAssembly().GetName().Name, "リストア中");
 
                 await Task.Run(() =>
                 {
@@ -285,10 +279,9 @@ namespace MHRiseModManager.ViewModels
                     Utility.CopyDirectory(targetDir, Settings.Default.GameDirectoryPath);
 
                     Directory.Delete(targetDir, true);
-
-                    objController.CloseAsync();
                 });
 
+                await objController.CloseAsync();
 
                 await MahAppsDialogCoordinator.ShowMessageAsync(this, Assembly.GetEntryAssembly().GetName().Name, "リストアを完了しました。");
             });
@@ -394,11 +387,11 @@ namespace MHRiseModManager.ViewModels
             dialog.ShowDialog();
 
             var controller = await MahAppsDialogCoordinator.ShowProgressAsync(this, Assembly.GetEntryAssembly().GetName().Name, "Modの新規登録中...");
+            
+            var returnModel = dialog.DataContext as InstallDialogViewModel;
 
             await Task.Run(() =>
             {
-                var returnModel = dialog.DataContext as InstallDialogViewModel;
-
                 var dropFile = dropFiles[0];
                 string imagefile = null;
 
@@ -412,16 +405,14 @@ namespace MHRiseModManager.ViewModels
 
                 File.Copy(dropFile, targetFile, true);
 
-                Utility.CleanDirectory(Path.Combine(Path.GetTempPath(), Settings.Default.TempDirectoryName));
-
                 _ModListManager.Insert(name: targetFileName, fileSize: new FileInfo(targetFile).Length, archiveFilePath: targetFile.Substring(Environment.CurrentDirectory.Length + 1), url: returnModel.URL.Value, memo: returnModel.Memo.Value, imagefilepath: imagefile, modName: modName);
 
-                ModFileListReflesh();
-
                 Utility.CleanDirectory(Path.Combine(Path.GetTempPath(), Settings.Default.TempDirectoryName));
-
-                controller.CloseAsync();
             });
+
+            ModFileListReflesh();
+
+            await controller.CloseAsync();
 
             await MahAppsDialogCoordinator.ShowMessageAsync(this, Assembly.GetEntryAssembly().GetName().Name, "Modを新規登録しました。");
         }

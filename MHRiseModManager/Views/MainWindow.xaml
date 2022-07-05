@@ -57,7 +57,7 @@
                 <ColumnDefinition Width="*"/>
             </Grid.ColumnDefinitions>
             <Label VerticalAlignment="Center" Grid.Column="0" Padding="0">ゲームフォルダ</Label>
-            <TextBox VerticalContentAlignment="Center" VerticalAlignment="Center" Padding="0" Grid.Column="1" Text="{Binding GameDirectoryPath.Value}"/>
+            <TextBox VerticalContentAlignment="Center" VerticalAlignment="Center" Padding="0" Grid.Column="1" IsReadOnly="True" Text="{Binding GameDirectoryPath.Value}"/>
             <Button VerticalAlignment="Center" Padding="0" Margin="0" Grid.Column="2" Width="100" Content="開く" Command="{Binding OpenGameFolderCommand}"/>
         </Grid>
         <Grid Grid.Row="2">

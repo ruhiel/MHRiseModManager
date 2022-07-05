@@ -370,51 +370,58 @@ namespace MHRiseModManager.ViewModels
 
         private async void OnFileDrop(DragEventArgs e)
         {
-            if (!e.Data.GetDataPresent(DataFormats.FileDrop))
+            try
             {
-                return;
+                if (!e.Data.GetDataPresent(DataFormats.FileDrop))
+                {
+                    return;
+                }
+
+                var dropFiles = e.Data.GetData(DataFormats.FileDrop) as string[];
+
+                if (dropFiles == null)
+                {
+                    return;
+                }
+
+                var dialog = new InstallDialog();
+
+                dialog.ShowDialog();
+
+                var controller = await MahAppsDialogCoordinator.ShowProgressAsync(this, Assembly.GetEntryAssembly().GetName().Name, "Modの新規登録中...");
+
+                var returnModel = dialog.DataContext as InstallDialogViewModel;
+
+                await Task.Run(() =>
+                {
+                    var dropFile = dropFiles[0];
+                    string imagefile = null;
+
+                    (dropFile, imagefile) = PreProcess(dropFile);
+
+                    var cacheDir = Utility.GetOrCreateDirectory(Path.Combine(Environment.CurrentDirectory, Settings.Default.ModsCacheDirectoryName));
+
+                    var targetFileName = Path.GetFileName(dropFile);
+                    var targetFile = Path.Combine(cacheDir, targetFileName);
+                    var modName = string.IsNullOrEmpty(returnModel.Name.Value) ? null : returnModel.Name.Value;
+
+                    File.Copy(dropFile, targetFile, true);
+
+                    _ModListManager.Insert(name: targetFileName, fileSize: new FileInfo(targetFile).Length, archiveFilePath: targetFile.Substring(Environment.CurrentDirectory.Length + 1), url: returnModel.URL.Value, memo: returnModel.Memo.Value, imagefilepath: imagefile, modName: modName);
+
+                    Utility.CleanDirectory(Path.Combine(Path.GetTempPath(), Settings.Default.TempDirectoryName));
+                });
+
+                ModFileListReflesh();
+
+                await controller.CloseAsync();
+
+                await MahAppsDialogCoordinator.ShowMessageAsync(this, Assembly.GetEntryAssembly().GetName().Name, "Modを新規登録しました。");
             }
-
-            var dropFiles = e.Data.GetData(DataFormats.FileDrop) as string[];
-
-            if (dropFiles == null)
+            catch (Exception ex)
             {
-                return;
+                MessageBox.Show(ex.ToString());
             }
-
-            var dialog = new InstallDialog();
-
-            dialog.ShowDialog();
-
-            var controller = await MahAppsDialogCoordinator.ShowProgressAsync(this, Assembly.GetEntryAssembly().GetName().Name, "Modの新規登録中...");
-            
-            var returnModel = dialog.DataContext as InstallDialogViewModel;
-
-            await Task.Run(() =>
-            {
-                var dropFile = dropFiles[0];
-                string imagefile = null;
-
-                (dropFile, imagefile) = PreProcess(dropFile);
-
-                var cacheDir = Utility.GetOrCreateDirectory(Path.Combine(Environment.CurrentDirectory, Settings.Default.ModsCacheDirectoryName));
-
-                var targetFileName = Path.GetFileName(dropFile);
-                var targetFile = Path.Combine(cacheDir, targetFileName);
-                var modName = string.IsNullOrEmpty(returnModel.Name.Value) ? null : returnModel.Name.Value;
-
-                File.Copy(dropFile, targetFile, true);
-
-                _ModListManager.Insert(name: targetFileName, fileSize: new FileInfo(targetFile).Length, archiveFilePath: targetFile.Substring(Environment.CurrentDirectory.Length + 1), url: returnModel.URL.Value, memo: returnModel.Memo.Value, imagefilepath: imagefile, modName: modName);
-
-                Utility.CleanDirectory(Path.Combine(Path.GetTempPath(), Settings.Default.TempDirectoryName));
-            });
-
-            ModFileListReflesh();
-
-            await controller.CloseAsync();
-
-            await MahAppsDialogCoordinator.ShowMessageAsync(this, Assembly.GetEntryAssembly().GetName().Name, "Modを新規登録しました。");
         }
 
         private (string, string) PreProcess(string dropFile)

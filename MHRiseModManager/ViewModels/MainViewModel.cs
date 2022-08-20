@@ -39,7 +39,9 @@ namespace MHRiseModManager.ViewModels
         private ModInfo _NowSelectModInfo;
         public ObservableCollection<ModInfo> ModInfoList { get; set; } = new ObservableCollection<ModInfo>();
         public ReactiveProperty<string> NowModURL { get; } = new ReactiveProperty<string>();
-        public ReactiveCommand<Object> NavigateCommand { get; } = new ReactiveCommand<Object>();
+        public ReactiveCommand<object> NavigateCommand { get; } = new ReactiveCommand<Object>();
+        public ReactiveCommand<object> SelectGameFolderCommand { get; } = new ReactiveCommand<Object>();
+
         public ReactiveCommand<object> OpenGameFolderCommand { get; } = new ReactiveCommand<Object>();
         public IDialogCoordinator MahAppsDialogCoordinator { get; set; }
         public AsyncReactiveCommand DeleteCommand { get; } = new AsyncReactiveCommand();
@@ -115,20 +117,7 @@ namespace MHRiseModManager.ViewModels
 
                     var targetFile = string.Empty;
 
-                    if(_NowSelectModInfo.Category == Category.Pak)
-                    {
-                        var num = _ModListManager.SelectLastPakNo();
-
-                        var fileName = $"re_chunk_000.pak.patch_{_NowSelectModInfo.Id:000000}.pak";
-
-                        targetFile = Path.Combine(Settings.Default.GameDirectoryPath, fileName);
-
-                        itemPath = Path.Combine(Path.GetDirectoryName(itemPath), fileName);
-                    }
-                    else
-                    {
-                        targetFile = Path.Combine(Settings.Default.GameDirectoryPath, itemPath);
-                    }
+                    targetFile = Path.Combine(Settings.Default.GameDirectoryPath, itemPath);
 
                     File.Copy(srcFile, targetFile, true);
 
@@ -137,12 +126,6 @@ namespace MHRiseModManager.ViewModels
 
                 _ModListManager.Install(_NowSelectModInfo.Id, files, _NowSelectModInfo.Category);
                 
-                if (_NowSelectModInfo.Category == Category.Pak)
-                {
-                    // Pakファイル名洗い替え
-                    _ModListManager.RefleshPakFileName();
-                }
-
                 ModFileListReflesh();
             });
 
@@ -179,12 +162,6 @@ namespace MHRiseModManager.ViewModels
 
                 _ModListManager.UpdateStatus(_NowSelectModInfo.Id, Status.未インストール, _NowSelectModInfo.Category);
 
-                if(_NowSelectModInfo.Category == Category.Pak)
-                {
-                    // Pakファイル名洗い替え
-                    _ModListManager.RefleshPakFileName();
-                }
-
                 ModFileListReflesh();
             });
 
@@ -206,15 +183,22 @@ namespace MHRiseModManager.ViewModels
                 System.Diagnostics.Process.Start(NowModURL.Value);
             });
 
+            SelectGameFolderCommand.Subscribe(e =>
+            {
+                using (var ofd = new System.Windows.Forms.OpenFileDialog() { FileName = "SelectFolder", Filter = "Folder|.", CheckFileExists = false })
+                {
+                    if (ofd.ShowDialog() == System.Windows.Forms.DialogResult.OK)
+                    {
+                        GameDirectoryPath.Value = Path.GetDirectoryName(ofd.FileName);
+                    }
+                }
+            });
+
             OpenGameFolderCommand.Subscribe(e =>
             {
-                var browser = new System.Windows.Forms.FolderBrowserDialog();
-
-                browser.Description = "フォルダーを選択してください";
-
-                if (browser.ShowDialog() == System.Windows.Forms.DialogResult.OK)
+                if (!string.IsNullOrEmpty(GameDirectoryPath.Value))
                 {
-                    GameDirectoryPath.Value = browser.SelectedPath;
+                    System.Diagnostics.Process.Start(GameDirectoryPath.Value);
                 }
             });
 
@@ -392,13 +376,20 @@ namespace MHRiseModManager.ViewModels
 
                 var returnModel = dialog.DataContext as InstallDialogViewModel;
 
+                var dropFile = dropFiles[0];
+                string imagefile = null;
+
+                (dropFile, imagefile) = PreProcess(dropFile);
+
+                if(dropFile == null)
+                {
+                    await MahAppsDialogCoordinator.ShowMessageAsync(this, Assembly.GetEntryAssembly().GetName().Name, "REFramework対応MOD以外のファイル形式です。\n処理を終了します。");
+
+                    return;
+                }
+
                 await Task.Run(() =>
                 {
-                    var dropFile = dropFiles[0];
-                    string imagefile = null;
-
-                    (dropFile, imagefile) = PreProcess(dropFile);
-
                     var cacheDir = Utility.GetOrCreateDirectory(Path.Combine(Environment.CurrentDirectory, Settings.Default.ModsCacheDirectoryName));
 
                     var targetFileName = Path.GetFileName(dropFile);
@@ -469,70 +460,9 @@ namespace MHRiseModManager.ViewModels
                 Directory.Delete(Path.Combine(tempDir, tempFileName), true);
 
             }
-            else if (mod.GetAllTree().Any(x => x.IsFile && x.Name == "modinfo.ini"))
+            else if (mod.GetNewCategory() == Category.その他)
             {
-                // 画像ファイル処理
-                var iniFile = mod.GetAllTree().First(x => x.IsFile && x.Name == "modinfo.ini");
-                var iniFilePath = Path.Combine(Path.GetDirectoryName(targetFile), Path.GetFileNameWithoutExtension(targetFile), iniFile.Path);
-
-                var dic = Utility.ReadIni(iniFilePath);
-                var ssFileName = dic.First().Value["screenshot"];
-
-                var srcSSPath = Path.Combine(Path.GetDirectoryName(iniFilePath), ssFileName);
-
-                var cacheDir = Utility.GetOrCreateDirectory(Path.Combine(Environment.CurrentDirectory, Settings.Default.ImageCacheDirectoryName));
-
-                var dstSSPath = Path.Combine(cacheDir, $"{Path.GetFileNameWithoutExtension(targetFile)}{Path.GetExtension(ssFileName)}");
-
-                File.Copy(srcSSPath, dstSSPath, true);
-
-                imageFile = Path.GetFileName(dstSSPath);
-
-                // アーカイブ処理
-                var srcDir = Path.GetDirectoryName(iniFilePath);
-
-                var di = new DirectoryInfo(srcDir);
-                
-                var tempFileName = Path.GetRandomFileName();
-
-                var targetDir = Utility.GetOrCreateDirectory(Path.Combine(tempDir, tempFileName));
-
-                if (di.GetFiles().Any())
-                {
-                    foreach (var f in di.GetFiles().Where(x => x.Name != ssFileName && x.Name != "modinfo.ini"))
-                    {
-                        File.Move(f.FullName, Path.Combine(targetDir, Path.GetFileName(f.FullName)));
-                    }
-                }
-
-                if (di.GetDirectories().Any())
-                {
-                    foreach (var d in di.GetDirectories())
-                    {
-                        Directory.Move(d.FullName, Path.Combine(targetDir, d.Name));
-                    }
-                }
-
-                resultFile = Path.Combine(Path.GetDirectoryName(targetFile), $"{Path.GetFileNameWithoutExtension(targetFile)}.zip");
-
-                Utility.CompressionFile(targetDir, resultFile);
-            }
-            else if (Category.Pak == mod.GetNewCategory() && mod.GetAllTree().Where(x => x.IsFile).Count() > 1)
-            {
-                var tempFileName = Path.GetRandomFileName();
-
-                var fileInfo = mod.GetFileTree().Find(x => Path.GetExtension(x.Path) == ".pak");
-
-                var targetDir = Utility.GetOrCreateDirectory(Path.Combine(tempDir, tempFileName));
-
-                var srcFile = Path.Combine(tempDir, Path.GetFileNameWithoutExtension(dropFile), fileInfo.Path);
-
-                File.Move(srcFile, Path.Combine(targetDir, Path.GetFileName(fileInfo.Path)));
-
-                resultFile = Path.Combine(Path.GetDirectoryName(targetFile), $"{Path.GetFileNameWithoutExtension(targetFile)}.zip");
-
-                Utility.CompressionFile(targetDir, resultFile);
-
+                return (null, null);
             }
 
             return (resultFile, imageFile);

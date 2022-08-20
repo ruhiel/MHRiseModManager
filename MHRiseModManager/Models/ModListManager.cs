@@ -105,13 +105,13 @@ namespace MHRiseModManager.Models
 
                 foreach (var file in files)
                 {
-                    sql = $"select count(*) from modinfodetail where modinfoid = {id} and {(category == Category.Pak ? "pakpath" : "path")} = '{file}'";
+                    sql = $"select count(*) from modinfodetail where modinfoid = {id} and path = '{file}'";
                     com = new SQLiteCommand(sql, con);
                     var record = (long)com.ExecuteScalar();
 
                     if(record == 0)
                     {
-                        sql = $"insert into modinfodetail (modinfoid, {(category == Category.Pak ? "pakpath" : "path")}) values ({id}, '{file}')";
+                        sql = $"insert into modinfodetail (modinfoid, path) values ({id}, '{file}')";
                         com = new SQLiteCommand(sql, con);
                         com.ExecuteNonQuery();
                     }
@@ -119,29 +119,6 @@ namespace MHRiseModManager.Models
 
                 con.Close();
             }
-        }
-        public long SelectLastPakNo()
-        {
-            long result;
-
-            // コネクションを開いてテーブル作成して閉じる  
-            using (var con = new SQLiteConnection($"Data Source={Settings.Default.DataBaseFileName}"))
-            {
-                con.Open();
-
-                string sql = $"select row_number() over (order by id) AS id from modinfo where category = {(int)Category.Pak} and status = {(int)Status.インストール済}";
-                using (var adapter = new SQLiteDataAdapter(sql, con))
-                using (var dataset = new DataSet())
-                {
-                    adapter.Fill(dataset, "tmp");
-                    var table = dataset.Tables["tmp"];
-                    result = table.Rows.Count == 0 ? 1 : (long)table.Rows[table.Rows.Count - 1]["id"] + 1;
-                }
-
-                con.Close();
-            }
-
-            return result;
         }
 
         public List<ModInfoDetail> SelectModFile(int modInfoId)
@@ -171,13 +148,6 @@ namespace MHRiseModManager.Models
                 SQLiteCommand com = new SQLiteCommand(sql, con);
                 com.ExecuteNonQuery();
 
-                if(category == Category.Pak)
-                {
-                    sql = $"update modinfodetail set path = null where modinfoid = {id}";
-                    com = new SQLiteCommand(sql, con);
-                    com.ExecuteNonQuery();
-                }
-
                 con.Close();
             }
         }
@@ -195,59 +165,6 @@ namespace MHRiseModManager.Models
                 sql = $"delete from modinfo where id = {id}";
                 com = new SQLiteCommand(sql, con);
                 com.ExecuteNonQuery();
-
-                con.Close();
-            }
-        }
-
-        public void RefleshPakFileName()
-        {
-            // コネクションを開いてテーブル作成して閉じる  
-            using (var con = new SQLiteConnection($"Data Source={Settings.Default.DataBaseFileName}"))
-            {
-                con.Open();
-
-                string sql = $"select modinfodetail.path, modinfodetail.pakpath from modinfodetail  inner join modinfo on modinfo.id = modinfodetail.modinfoid and modinfo.category = {(int)Category.Pak} where modinfodetail.path is not null";
-                using (var adapter = new SQLiteDataAdapter(sql, con))
-                using (var dataset = new DataSet())
-                {
-                    adapter.Fill(dataset, "tmp");
-                    var table = dataset.Tables["tmp"];
-
-                    for (int i = 0; i < table.Rows.Count; i++)
-                    {
-                        var newName = (string)table.Rows[i]["path"];
-                        var oldName = (string)table.Rows[i]["pakpath"];
-
-                        if (!newName.Equals(oldName))
-                        {
-                            File.Move(Path.Combine(Settings.Default.GameDirectoryPath, newName), Path.Combine(Settings.Default.GameDirectoryPath, oldName));
-                        }
-                    }
-                }
-
-                sql = $"select modinfodetail.id, row_number() over (order by modinfodetail.id) AS new, modinfodetail.path, pakpath from modinfodetail inner join modinfo on modinfo.id = modinfodetail.modinfoid and modinfo.status = 1 and modinfo.category = {(int)Category.Pak}";
-                using (var adapter = new SQLiteDataAdapter(sql, con))
-                using (var dataset = new DataSet())
-                {
-                    adapter.Fill(dataset, "tmp");
-                    var table = dataset.Tables["tmp"];
-
-                    for(int i = 0; i < table.Rows.Count; i++)
-                    {
-                        var record = (id:(long)table.Rows[i]["id"], oldPath: (string)table.Rows[i]["pakpath"], newPath: $"re_chunk_000.pak.patch_{(long)table.Rows[i]["new"]:000}.pak");
-
-                        sql = $"update modinfodetail set path = '{record.newPath}' where id = {record.id}";
-                        SQLiteCommand com = new SQLiteCommand(sql, con);
-                        com.ExecuteNonQuery();
-
-                        if (!record.newPath.Equals(record.oldPath))
-                        {
-                            File.Move(Path.Combine(Settings.Default.GameDirectoryPath, record.oldPath), Path.Combine(Settings.Default.GameDirectoryPath, record.newPath));
-                        }
-                    }
-                    
-                }
 
                 con.Close();
             }

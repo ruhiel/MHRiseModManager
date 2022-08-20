@@ -122,9 +122,9 @@ namespace MHRiseModManager.Models
                     category = Category.Lua;
                     break;
                 }
-                else if (item.Name.EndsWith("pak"))
+                if (item.Name.Equals("dinput8.dll"))
                 {
-                    category = Category.Pak;
+                    category = Category.REFramework;
                     break;
                 }
             }

@@ -104,65 +104,12 @@ namespace MHRiseModManager.ViewModels
 
             InstallCommand.Subscribe(e =>
             {
-                var files = new List<string>();
-
-                foreach (var item in _NowSelectModInfo.GetAllTree().Where(x => x.IsFile))
-                {
-                    var itemPath = item.Path;
-                    var dir = Path.GetDirectoryName(itemPath);
-
-                    var targetDir = Utility.GetOrCreateDirectory(Path.Combine(Settings.Default.GameDirectoryPath, dir));
-
-                    var srcFile = Path.Combine(_NowSelectModInfo.ExtractArchivePath, itemPath);
-
-                    var targetFile = string.Empty;
-
-                    targetFile = Path.Combine(Settings.Default.GameDirectoryPath, itemPath);
-
-                    File.Copy(srcFile, targetFile, true);
-
-                    files.Add(itemPath);
-                }
-
-                _ModListManager.Install(_NowSelectModInfo.Id, files, _NowSelectModInfo.Category);
-                
-                ModFileListReflesh();
+                Install(_NowSelectModInfo);
             });
 
             UnInstallCommand.Subscribe(e =>
             {
-                var set = new HashSet<string>();
-                var list = _ModListManager.SelectModFile(_NowSelectModInfo.Id);
-                foreach(var item in list)
-                {
-                    set.Add(Path.GetDirectoryName(item.Path));
-
-                    File.Delete(Path.Combine(Settings.Default.GameDirectoryPath, item.Path));
-                }
-
-                var setDir = new HashSet<string>();
-
-                foreach(var item in set)
-                {
-                    var dirList = item.Split(Path.DirectorySeparatorChar).ToList();
-                    foreach( var a in Utility.Re(dirList) )
-                    {
-                        setDir.Add(Path.Combine(a.ToArray()));
-                    }
-                }
-
-                setDir.OrderByDescending(a => a.Length).ToList().ForEach(x =>
-                {
-                    var dir = Path.Combine(Settings.Default.GameDirectoryPath, x);
-                    if(Utility.IsEmptyDirectory(dir) && !dir.Equals(Settings.Default.GameDirectoryPath))
-                    {
-                        Directory.Delete(dir);
-                    }
-                });
-
-                _ModListManager.UpdateStatus(_NowSelectModInfo.Id, Status.未インストール, _NowSelectModInfo.Category);
-
-                ModFileListReflesh();
+                Uninstall(_NowSelectModInfo);
             });
 
             CloseCommand.Subscribe(e =>
@@ -493,10 +440,121 @@ namespace MHRiseModManager.ViewModels
 
             ModFileTree.Clear();
         }
-
-        public void OnRowUpdate(ModInfo modInfo)
+        private void Install(ModInfo modInfo)
         {
-            // TODO: MODの更新
+            var files = new List<string>();
+
+            foreach (var item in modInfo.GetAllTree().Where(x => x.IsFile))
+            {
+                var itemPath = item.Path;
+                var dir = Path.GetDirectoryName(itemPath);
+
+                var targetDir = Utility.GetOrCreateDirectory(Path.Combine(Settings.Default.GameDirectoryPath, dir));
+
+                var srcFile = Path.Combine(modInfo.ExtractArchivePath, itemPath);
+
+                var targetFile = string.Empty;
+
+                targetFile = Path.Combine(Settings.Default.GameDirectoryPath, itemPath);
+
+                File.Copy(srcFile, targetFile, true);
+
+                files.Add(itemPath);
+            }
+
+            _ModListManager.Install(modInfo.Id, files, modInfo.Category);
+
+            ModFileListReflesh();
+        }
+
+        private void Uninstall(ModInfo modInfo, bool detailDelete = false)
+        {
+            var set = new HashSet<string>();
+            var list = _ModListManager.SelectModFile(modInfo.Id);
+            foreach (var item in list)
+            {
+                set.Add(Path.GetDirectoryName(item.Path));
+
+                File.Delete(Path.Combine(Settings.Default.GameDirectoryPath, item.Path));
+            }
+
+            var setDir = new HashSet<string>();
+
+            foreach (var item in set)
+            {
+                var dirList = item.Split(Path.DirectorySeparatorChar).ToList();
+                foreach (var a in Utility.Re(dirList))
+                {
+                    setDir.Add(Path.Combine(a.ToArray()));
+                }
+            }
+
+            setDir.OrderByDescending(a => a.Length).ToList().ForEach(x =>
+            {
+                var dir = Path.Combine(Settings.Default.GameDirectoryPath, x);
+                if (Utility.IsEmptyDirectory(dir) && !dir.Equals(Settings.Default.GameDirectoryPath))
+                {
+                    Directory.Delete(dir);
+                }
+            });
+
+            _ModListManager.UpdateStatus(modInfo.Id, Status.未インストール, modInfo.Category);
+
+            if (detailDelete)
+            {
+                _ModListManager.DeleteDetail(modInfo.Id);
+            }
+            else
+            {
+                ModFileListReflesh();
+            }
+        }
+
+        public async void OnRowUpdate(ModInfo modInfo)
+        {
+            var newModInfo = modInfo;
+
+            // アンインストール
+            Uninstall(modInfo, true);
+
+            var dropFile = string.Empty;
+
+            // アーカイブファイル更新
+            using (var ofd = new System.Windows.Forms.OpenFileDialog() { FileName = "" })
+            {
+                if (ofd.ShowDialog() != System.Windows.Forms.DialogResult.OK)
+                {
+                    return;
+                }
+
+                dropFile = ofd.FileName;
+            }
+
+            dropFile = PreProcess(dropFile).Item1;
+
+            if (dropFile == null)
+            {
+                await MahAppsDialogCoordinator.ShowMessageAsync(this, Assembly.GetEntryAssembly().GetName().Name, "REFramework対応MOD以外のファイル形式です。\n処理を終了します。");
+
+                return;
+            }
+
+            await Task.Run(() =>
+            {
+                var cacheDir = Utility.GetOrCreateDirectory(Path.Combine(Environment.CurrentDirectory, Settings.Default.ModsCacheDirectoryName));
+
+                var targetFileName = Path.GetFileName(dropFile);
+                var targetFile = Path.Combine(cacheDir, targetFileName);
+
+                File.Copy(dropFile, targetFile, true);
+
+                newModInfo = _ModListManager.Update(id: modInfo.Id, fileSize: new FileInfo(targetFile).Length, archiveFilePath: targetFile.Substring(Environment.CurrentDirectory.Length + 1));
+
+                Utility.CleanDirectory(Path.Combine(Path.GetTempPath(), Settings.Default.TempDirectoryName));
+            });
+
+            // インストール
+            Install(newModInfo);
         }
     }
 }

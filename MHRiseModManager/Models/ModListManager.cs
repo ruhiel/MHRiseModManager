@@ -16,7 +16,7 @@ namespace MHRiseModManager.Models
     {
         public ModListManager()
         {
-            if (!System.IO.File.Exists(Settings.Default.DataBaseFileName))
+            if (!File.Exists(Settings.Default.DataBaseFileName))
             {
                 // コネクションを開いてテーブル作成して閉じる  
                 using (var con = new SQLiteConnection($"Data Source={Settings.Default.DataBaseFileName}"))
@@ -168,6 +168,35 @@ namespace MHRiseModManager.Models
 
                 con.Close();
             }
+        }
+        public void DeleteDetail(int id)
+        {
+            // コネクションを開いてテーブル作成して閉じる  
+            using (var con = new SQLiteConnection($"Data Source={Settings.Default.DataBaseFileName}"))
+            {
+                con.Open();
+                var sql = $"delete from modinfodetail where modinfoid = {id}";
+                var com = new SQLiteCommand(sql, con);
+                com.ExecuteNonQuery();
+
+                con.Close();
+            }
+        }
+
+        public ModInfo Update(int id, long fileSize, string archiveFilePath)
+        {
+            // コネクションを開いてテーブル作成して閉じる  
+            using (var con = new SQLiteConnection($"Data Source={Settings.Default.DataBaseFileName}"))
+            {
+                con.Open();
+                string sql = $"update modinfo set filesize = {(int)fileSize}, archivefilepath = '{archiveFilePath}' where id = {id}";
+                var com = new SQLiteCommand(sql, con);
+                com.ExecuteNonQuery();
+
+                con.Close();
+            }
+
+            return SelectAll().Where(x => x.Id == id).First();
         }
     }
 }

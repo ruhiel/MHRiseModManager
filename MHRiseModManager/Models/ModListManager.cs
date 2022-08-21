@@ -201,7 +201,7 @@ namespace MHRiseModManager.Models
             using (var con = new SQLiteConnection($"Data Source={Settings.Default.DataBaseFileName}"))
             {
                 con.Open();
-                string sql = $"update modinfo set name = '{name}', url = '{url}', memo = '{memo}' where id = {id}";
+                string sql = $"update modinfo set modname = '{name}', url = '{url}', memo = '{memo}' where id = {id}";
                 var com = new SQLiteCommand(sql, con);
                 com.ExecuteNonQuery();
 

@@ -287,14 +287,11 @@ namespace MHRiseModManager.ViewModels
 
             CSVExportCommand.Subscribe(e =>
             {
-                var records = _ModListManager.SelectAll().Select(x => new CSVRecord() { Name = x.Name, Url = x.URL, Memo = x.Memo});
+                var records = _ModListManager.SelectAll().Select(x => new CSVRecord() { Name = x.ModName, Url = x.URL, Memo = x.Memo});
 
                 var filePath = Path.Combine(Path.GetTempPath(), Path.ChangeExtension(Path.GetRandomFileName(), "csv"));
 
-                // .NET 6 の場合でShift-jisをエンコードする場合は下記の処理が必要
-                // Encoding.RegisterProvider(CodePagesEncodingProvider.Instance);
-
-                using (var writer = new StreamWriter(filePath, false, Encoding.GetEncoding("Shift_JIS"))) //Shift-JISの文字化け対策にエンコード
+                using (var writer = new StreamWriter(filePath, false, Encoding.GetEncoding("Shift_JIS")))
                 {
                     using (var csv = new CsvWriter(writer, new CultureInfo("ja-JP", false)))
                     {
@@ -586,7 +583,7 @@ namespace MHRiseModManager.ViewModels
             var returnModel = dialog.DataContext as InstallDialogViewModel;
 
             returnModel.URL.Value = modInfo.URL;
-            returnModel.Name.Value = modInfo.Name;
+            returnModel.Name.Value = modInfo.ModName;
             returnModel.Memo.Value = modInfo.Memo;
 
             dialog.ShowDialog();

@@ -44,6 +44,7 @@
             <MenuItem Header="ファイル(_F)">
                 <MenuItem Header="バックアップ" Command="{Binding BackUpCommand}"/>
                 <MenuItem Header="リストア" Command="{Binding RestoreCommand}"/>
+                <MenuItem Header="CSVエクスポート" Command="{Binding CSVExportCommand}"/>
                 <MenuItem Header="終了" Command="{Binding MenuCloseCommand}"  CommandParameter="{Binding RelativeSource={RelativeSource Mode=FindAncestor, AncestorType=Window}}"/>
             </MenuItem>
             <MenuItem Header="設定(_S)">
@@ -107,6 +108,13 @@
                         <!--
                         <DataGridTextColumn Header="URL" Binding="{Binding URL}" Width="*"/>
                         -->
+                        <DataGridTemplateColumn Header="編集">
+                            <DataGridTemplateColumn.CellTemplate>
+                                <DataTemplate>
+                                    <Button Content="編集" Command="{Binding ModEditCommand}" IsEnabled="{Binding Updatable.Value}"/>
+                                </DataTemplate>
+                            </DataGridTemplateColumn.CellTemplate>
+                        </DataGridTemplateColumn>
                         <DataGridTemplateColumn Header="Mod更新">
                             <DataGridTemplateColumn.CellTemplate>
                                 <DataTemplate>

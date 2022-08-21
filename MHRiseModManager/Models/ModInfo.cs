@@ -138,6 +138,8 @@ namespace MHRiseModManager.Models
 
         public ReactiveCommand<EventArgs> ModUpdateCommand { get; set; } = new ReactiveCommand<EventArgs>();
 
+        public ReactiveCommand<EventArgs> ModEditCommand { get; set; } = new ReactiveCommand<EventArgs>();
+
         private MainViewModel _MainViewModel;
 
         public ModInfo(int id, string name, Status status, long fileSize, DateTime dateCreated, Category category, string archiveFilePath, string url, string memo, string modName = null, string imageFilePath = null, MainViewModel mainViewModel = null)
@@ -158,6 +160,11 @@ namespace MHRiseModManager.Models
             ModUpdateCommand.Subscribe(_ =>
             {
                 _MainViewModel.OnRowUpdate(this);
+            });
+
+            ModEditCommand.Subscribe(_ =>
+            {
+                _MainViewModel.OnRowEdit(this);
             });
 
             Updatable = this.ObserveProperty(x => x.Status).Select(y => y == Status.インストール済).ToReadOnlyReactiveProperty();

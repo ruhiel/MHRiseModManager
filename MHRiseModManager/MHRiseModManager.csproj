@@ -10,6 +10,7 @@
   </PropertyGroup>
 
   <ItemGroup>
+    <PackageReference Include="CsvHelper" Version="28.0.1" />
     <PackageReference Include="MahApps.Metro" Version="2.4.9" />
     <PackageReference Include="ReactiveProperty" Version="8.0.3" />
     <PackageReference Include="ReactiveProperty.WPF" Version="8.0.3" />

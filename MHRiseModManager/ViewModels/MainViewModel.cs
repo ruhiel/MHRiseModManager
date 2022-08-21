@@ -13,9 +13,12 @@ using System.Reactive.Disposables;
 using System.Windows;
 using System.Windows.Controls;
 using MahApps.Metro.Controls.Dialogs;
-using MahApps.Metro.Controls;
 using System.Threading.Tasks;
 using System.Reflection;
+using CsvHelper;
+using System.Globalization;
+using CsvHelper.Configuration;
+using System.Text;
 
 namespace MHRiseModManager.ViewModels
 {
@@ -34,19 +37,19 @@ namespace MHRiseModManager.ViewModels
         public ReactiveProperty<bool> UnInstallable { get; } = new ReactiveProperty<bool>();
         public ReactiveProperty<string> NowMemo { get; } = new ReactiveProperty<string>();
         public ReactiveCommand<DragEventArgs> FileDropCommand { get; private set; }
-        public ReactiveCommand<(object sender, EventArgs args)> SelectionChanged { get; private set;} = new ReactiveCommand<(object sender, EventArgs args)>();
+        public ReactiveCommand<(object sender, EventArgs args)> SelectionChanged { get; private set; } = new ReactiveCommand<(object sender, EventArgs args)>();
         private ModListManager _ModListManager = new ModListManager();
         private ModInfo _NowSelectModInfo;
         public ObservableCollection<ModInfo> ModInfoList { get; set; } = new ObservableCollection<ModInfo>();
         public ReactiveProperty<string> NowModURL { get; } = new ReactiveProperty<string>();
         public ReactiveCommand<object> NavigateCommand { get; } = new ReactiveCommand<Object>();
         public ReactiveCommand<object> SelectGameFolderCommand { get; } = new ReactiveCommand<Object>();
-
         public ReactiveCommand<object> OpenGameFolderCommand { get; } = new ReactiveCommand<Object>();
         public IDialogCoordinator MahAppsDialogCoordinator { get; set; }
         public AsyncReactiveCommand DeleteCommand { get; } = new AsyncReactiveCommand();
         public AsyncReactiveCommand BackUpCommand { get; } = new AsyncReactiveCommand();
         public AsyncReactiveCommand RestoreCommand { get; } = new AsyncReactiveCommand();
+        public ReactiveCommand CSVExportCommand { get; } = new ReactiveCommand();
         public ReactiveCommand MenuCloseCommand { get; } = new ReactiveCommand();
         public AsyncReactiveCommand SettingResetCommand { get; } = new AsyncReactiveCommand();
         public MainViewModel()
@@ -66,7 +69,7 @@ namespace MHRiseModManager.ViewModels
 
                 var modInfo = (ModInfo)datagrid.SelectedItem;
 
-                if(modInfo != null)
+                if (modInfo != null)
                 {
                     _NowSelectModInfo = modInfo;
 
@@ -84,7 +87,7 @@ namespace MHRiseModManager.ViewModels
 
                     if (string.IsNullOrEmpty(modInfo.ImageFilePath))
                     {
-                        ModImagePath.Value = Path.Combine(Environment.CurrentDirectory, Settings.Default.ResourceDirectoryName, "no_image_yoko.jpg"); 
+                        ModImagePath.Value = Path.Combine(Environment.CurrentDirectory, Settings.Default.ResourceDirectoryName, "no_image_yoko.jpg");
                     }
                     else
                     {
@@ -154,7 +157,7 @@ namespace MHRiseModManager.ViewModels
                 ProgressDialogController objController = await MahAppsDialogCoordinator.ShowProgressAsync(this, Assembly.GetEntryAssembly().GetName().Name, "バックアップ中");
 
                 objController.Minimum = 0;
-                
+
                 await Task.Run(() =>
                 {
                     var path = Utility.GetOrCreateDirectory(Path.Combine(Path.GetTempPath(), Settings.Default.TempDirectoryName, Path.GetRandomFileName()));
@@ -188,7 +191,7 @@ namespace MHRiseModManager.ViewModels
             {
                 var backUpDir = Utility.GetOrCreateDirectory(Path.Combine(Environment.CurrentDirectory, Settings.Default.BackUpDirectoryName));
 
-                if(!Directory.EnumerateFileSystemEntries(backUpDir).Any())
+                if (!Directory.EnumerateFileSystemEntries(backUpDir).Any())
                 {
                     await MahAppsDialogCoordinator.ShowMessageAsync(this, Assembly.GetEntryAssembly().GetName().Name, "バックアップファイルがありません。先にバックアップしてください。");
                     return;
@@ -230,7 +233,7 @@ namespace MHRiseModManager.ViewModels
 
                 var diagResult = await MahAppsDialogCoordinator.ShowMessageAsync(this, Assembly.GetEntryAssembly().GetName().Name, "設定の初期化は全てのModのアンインストール後をおすすめします。\r\nよろしいですか？", MessageDialogStyle.AffirmativeAndNegative, metroDialogSettings);
 
-                if(MessageDialogResult.Negative == diagResult)
+                if (MessageDialogResult.Negative == diagResult)
                 {
                     return;
                 }
@@ -282,6 +285,26 @@ namespace MHRiseModManager.ViewModels
                 ModFileListReflesh();
             });
 
+            CSVExportCommand.Subscribe(e =>
+            {
+                var records = _ModListManager.SelectAll().Select(x => new CSVRecord() { Name = x.Name, Url = x.URL, Memo = x.Memo});
+
+                var filePath = Path.Combine(Path.GetTempPath(), Path.ChangeExtension(Path.GetRandomFileName(), "csv"));
+
+                // .NET 6 の場合でShift-jisをエンコードする場合は下記の処理が必要
+                // Encoding.RegisterProvider(CodePagesEncodingProvider.Instance);
+
+                using (var writer = new StreamWriter(filePath, false, Encoding.GetEncoding("Shift_JIS"))) //Shift-JISの文字化け対策にエンコード
+                {
+                    using (var csv = new CsvWriter(writer, new CultureInfo("ja-JP", false)))
+                    {
+                        csv.WriteRecords(records);
+                    }
+                }
+
+                System.Diagnostics.Process.Start(filePath);
+            });
+
             MenuCloseCommand.Subscribe(x => ((Window)x).Close());
 
             ModFileListReflesh();
@@ -326,9 +349,9 @@ namespace MHRiseModManager.ViewModels
                 var dropFile = dropFiles[0];
                 string imagefile = null;
 
-                (dropFile, imagefile) = PreProcess(dropFile);
+                dropFile = PreProcess(dropFile);
 
-                if(dropFile == null)
+                if (dropFile == null)
                 {
                     await MahAppsDialogCoordinator.ShowMessageAsync(this, Assembly.GetEntryAssembly().GetName().Name, "REFramework対応MOD以外のファイル形式です。\n処理を終了します。");
 
@@ -362,19 +385,18 @@ namespace MHRiseModManager.ViewModels
             }
         }
 
-        private (string, string) PreProcess(string dropFile)
+        private string PreProcess(string dropFile)
         {
             var resultFile = dropFile;
-            var imageFile = string.Empty;
 
             var tempDir = Utility.GetOrCreateDirectory(Path.Combine(Path.GetTempPath(), Settings.Default.TempDirectoryName));
 
             var targetFile = Path.Combine(tempDir, Path.GetFileName(dropFile));
             File.Copy(dropFile, targetFile, true);
 
-            var mod = new ModInfo(id: 1, name: "", status: Status.未インストール, fileSize: new FileInfo(targetFile).Length, dateCreated: DateTime.Now, category: Category.Lua, archiveFilePath: targetFile, url: "", memo:"");
+            var mod = new ModInfo(id: 1, name: "", status: Status.未インストール, fileSize: new FileInfo(targetFile).Length, dateCreated: DateTime.Now, category: Category.Lua, archiveFilePath: targetFile, url: "", memo: "");
 
-            if(mod.GetNewCategory() == Category.Lua && !mod.GetFileTree().Any(x => !x.IsFile && x.Name == "reframework"))
+            if (mod.GetNewCategory() == Category.Lua && !mod.GetFileTree().Any(x => !x.IsFile && x.Name == "reframework"))
             {
                 var tempFileName = Path.GetRandomFileName();
                 // Luaかつreframeworkがない
@@ -384,7 +406,7 @@ namespace MHRiseModManager.ViewModels
 
                 var di = new DirectoryInfo(srcDir);
 
-                if(di.GetFiles().Any())
+                if (di.GetFiles().Any())
                 {
                     foreach (var f in di.GetFiles())
                     {
@@ -392,16 +414,16 @@ namespace MHRiseModManager.ViewModels
                     }
                 }
 
-                if(di.GetDirectories().Any())
+                if (di.GetDirectories().Any())
                 {
                     foreach (var d in di.GetDirectories())
                     {
                         Directory.Move(d.FullName, Path.Combine(reframeworkDir, d.Name));
                     }
                 }
-                
+
                 resultFile = Path.Combine(Path.GetDirectoryName(targetFile), $"{Path.GetFileNameWithoutExtension(targetFile)}.zip");
-                
+
                 Utility.CompressionFile(Path.Combine(tempDir, tempFileName), resultFile);
 
                 Directory.Delete(Path.Combine(tempDir, tempFileName), true);
@@ -409,10 +431,10 @@ namespace MHRiseModManager.ViewModels
             }
             else if (mod.GetNewCategory() == Category.その他)
             {
-                return (null, null);
+                return null;
             }
 
-            return (resultFile, imageFile);
+            return resultFile;
         }
 
         private void ModFileListReflesh()
@@ -421,7 +443,7 @@ namespace MHRiseModManager.ViewModels
 
             _ModListManager.SelectAll().ForEach(x =>
             {
-                ModInfoList.Add(new ModInfo(id:x.Id, name:x.Name, status:x.Status, fileSize:x.FileSize, dateCreated:x.DateCreated, category:x.Category, archiveFilePath:x.ArchiveFilePath, url:x.URL, imageFilePath:x.ImageFilePath, memo:x.Memo, modName:x.ModName, mainViewModel:this));
+                ModInfoList.Add(new ModInfo(id: x.Id, name: x.Name, status: x.Status, fileSize: x.FileSize, dateCreated: x.DateCreated, category: x.Category, archiveFilePath: x.ArchiveFilePath, url: x.URL, imageFilePath: x.ImageFilePath, memo: x.Memo, modName: x.ModName, mainViewModel: this));
             });
 
             NowModPath.Value = string.Empty;
@@ -530,7 +552,7 @@ namespace MHRiseModManager.ViewModels
             // アンインストール
             Uninstall(modInfo, true);
 
-            dropFile = PreProcess(dropFile).Item1;
+            dropFile = PreProcess(dropFile);
 
             if (dropFile == null)
             {
@@ -548,13 +570,30 @@ namespace MHRiseModManager.ViewModels
 
                 File.Copy(dropFile, targetFile, true);
 
-                newModInfo = _ModListManager.Update(id: modInfo.Id, name: targetFileName, fileSize: new FileInfo(targetFile).Length, archiveFilePath: targetFile.Substring(Environment.CurrentDirectory.Length + 1));
+                newModInfo = _ModListManager.Update(id: modInfo.Id, fileSize: new FileInfo(targetFile).Length, archiveFilePath: targetFile.Substring(Environment.CurrentDirectory.Length + 1));
 
                 Utility.CleanDirectory(Path.Combine(Path.GetTempPath(), Settings.Default.TempDirectoryName));
             });
 
             // インストール
             Install(newModInfo);
+        }
+
+        public async void OnRowEdit(ModInfo modInfo)
+        {
+            var dialog = new InstallDialog();
+
+            var returnModel = dialog.DataContext as InstallDialogViewModel;
+
+            returnModel.URL.Value = modInfo.URL;
+            returnModel.Name.Value = modInfo.Name;
+            returnModel.Memo.Value = modInfo.Memo;
+
+            dialog.ShowDialog();
+
+            _ModListManager.Update(id: modInfo.Id, name: returnModel.Name.Value, url: returnModel.URL.Value, memo: returnModel.Memo.Value);
+
+            ModFileListReflesh();
 
             await MahAppsDialogCoordinator.ShowMessageAsync(this, Assembly.GetEntryAssembly().GetName().Name, "Modを更新しました。");
         }

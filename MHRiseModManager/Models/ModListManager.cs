@@ -1,14 +1,10 @@
 ﻿using MHRiseModManager.Properties;
 using System;
 using System.Collections.Generic;
-using System.Data;
 using System.Data.Linq;
-using System.Data.SqlClient;
 using System.Data.SQLite;
 using System.IO;
 using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
 
 namespace MHRiseModManager.Models
 {
@@ -183,13 +179,29 @@ namespace MHRiseModManager.Models
             }
         }
 
-        public ModInfo Update(int id, long fileSize, string name, string archiveFilePath)
+        public ModInfo Update(int id, long fileSize, string archiveFilePath)
         {
             // コネクションを開いてテーブル作成して閉じる  
             using (var con = new SQLiteConnection($"Data Source={Settings.Default.DataBaseFileName}"))
             {
                 con.Open();
-                string sql = $"update modinfo set name = '{name}', filesize = {(int)fileSize}, archivefilepath = '{archiveFilePath}' where id = {id}";
+                string sql = $"update modinfo set filesize = {(int)fileSize}, archivefilepath = '{archiveFilePath}' where id = {id}";
+                var com = new SQLiteCommand(sql, con);
+                com.ExecuteNonQuery();
+
+                con.Close();
+            }
+
+            return SelectAll().Where(x => x.Id == id).First();
+        }
+
+        public ModInfo Update(int id, string name, string url, string memo)
+        {
+            // コネクションを開いてテーブル作成して閉じる  
+            using (var con = new SQLiteConnection($"Data Source={Settings.Default.DataBaseFileName}"))
+            {
+                con.Open();
+                string sql = $"update modinfo set name = '{name}', url = '{url}', memo = '{memo}' where id = {id}";
                 var com = new SQLiteCommand(sql, con);
                 com.ExecuteNonQuery();
 

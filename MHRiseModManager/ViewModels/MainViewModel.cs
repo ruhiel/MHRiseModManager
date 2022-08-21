@@ -514,9 +514,6 @@ namespace MHRiseModManager.ViewModels
         {
             var newModInfo = modInfo;
 
-            // アンインストール
-            Uninstall(modInfo, true);
-
             var dropFile = string.Empty;
 
             // アーカイブファイル更新
@@ -529,6 +526,9 @@ namespace MHRiseModManager.ViewModels
 
                 dropFile = ofd.FileName;
             }
+
+            // アンインストール
+            Uninstall(modInfo, true);
 
             dropFile = PreProcess(dropFile).Item1;
 
@@ -548,13 +548,15 @@ namespace MHRiseModManager.ViewModels
 
                 File.Copy(dropFile, targetFile, true);
 
-                newModInfo = _ModListManager.Update(id: modInfo.Id, fileSize: new FileInfo(targetFile).Length, archiveFilePath: targetFile.Substring(Environment.CurrentDirectory.Length + 1));
+                newModInfo = _ModListManager.Update(id: modInfo.Id, name: targetFileName, fileSize: new FileInfo(targetFile).Length, archiveFilePath: targetFile.Substring(Environment.CurrentDirectory.Length + 1));
 
                 Utility.CleanDirectory(Path.Combine(Path.GetTempPath(), Settings.Default.TempDirectoryName));
             });
 
             // インストール
             Install(newModInfo);
+
+            await MahAppsDialogCoordinator.ShowMessageAsync(this, Assembly.GetEntryAssembly().GetName().Name, "Modを更新しました。");
         }
     }
 }

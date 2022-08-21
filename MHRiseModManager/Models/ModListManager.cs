@@ -183,13 +183,13 @@ namespace MHRiseModManager.Models
             }
         }
 
-        public ModInfo Update(int id, long fileSize, string archiveFilePath)
+        public ModInfo Update(int id, long fileSize, string name, string archiveFilePath)
         {
             // コネクションを開いてテーブル作成して閉じる  
             using (var con = new SQLiteConnection($"Data Source={Settings.Default.DataBaseFileName}"))
             {
                 con.Open();
-                string sql = $"update modinfo set filesize = {(int)fileSize}, archivefilepath = '{archiveFilePath}' where id = {id}";
+                string sql = $"update modinfo set name = '{name}', filesize = {(int)fileSize}, archivefilepath = '{archiveFilePath}' where id = {id}";
                 var com = new SQLiteCommand(sql, con);
                 com.ExecuteNonQuery();
 

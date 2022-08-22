@@ -53,7 +53,7 @@ namespace MHRiseModManager.Models
 
         }
 
-        public void Insert(string name, long fileSize, string archiveFilePath, string url, string modName = null, string imagefilepath = null, string memo = null, DateTime? dateCreated = null, Status status = Status.未インストール)
+        public void Insert(string name, long fileSize, string archiveFilePath, string url, string modName = null, string memo = null, DateTime? dateCreated = null, Status status = Status.未インストール)
         {
             var dt = dateCreated ?? DateTime.Now;
 
@@ -63,7 +63,7 @@ namespace MHRiseModManager.Models
             using (var con = new SQLiteConnection($"Data Source={Settings.Default.DataBaseFileName}"))
             {
                 con.Open();
-                string sql = $"insert into modinfo (name, status, filesize, datecreated, category, archivefilepath, url{(imagefilepath == null ? "" : ", imagefilepath")}{(memo == null ? "" : ", memo")}{(modName == null ? "" : ", modname")}) values ('{name.Replace("'", "''")}', {(int)status}, {fileSize}, '{dt.ToString("yyyy-MM-dd HH:mm:ss")}', {(int)mod.GetNewCategory()}, '{archiveFilePath.Replace("'", "''")}', '{url}'{(imagefilepath == null ? "" : ",'" + imagefilepath.Replace("'", "''") + "'")}{(memo == null ? "" : ", '" + memo + "'")}{(modName == null ? "" : ", '" + modName + "'")});";
+                string sql = $"insert into modinfo (name, status, filesize, datecreated, category, archivefilepath, url{(memo == null ? "" : ", memo")}{(modName == null ? "" : ", modname")}) values ('{name.Replace("'", "''")}', {(int)status}, {fileSize}, '{dt.ToString("yyyy-MM-dd HH:mm:ss")}', {(int)mod.GetNewCategory()}, '{archiveFilePath.Replace("'", "''")}', '{url}'{(memo == null ? "" : ", '" + memo + "'")}{(modName == null ? "" : ", '" + modName + "'")});";
                 SQLiteCommand com = new SQLiteCommand(sql, con);
                 com.ExecuteNonQuery();
 

@@ -17,8 +17,8 @@ using System.Threading.Tasks;
 using System.Reflection;
 using CsvHelper;
 using System.Globalization;
-using CsvHelper.Configuration;
 using System.Text;
+using CsvHelper.Configuration;
 
 namespace MHRiseModManager.ViewModels
 {
@@ -49,7 +49,9 @@ namespace MHRiseModManager.ViewModels
         public AsyncReactiveCommand DeleteCommand { get; } = new AsyncReactiveCommand();
         public AsyncReactiveCommand BackUpCommand { get; } = new AsyncReactiveCommand();
         public AsyncReactiveCommand RestoreCommand { get; } = new AsyncReactiveCommand();
+        public ReactiveCommand CSVImportCommand { get; } = new ReactiveCommand();
         public ReactiveCommand CSVExportCommand { get; } = new ReactiveCommand();
+        public ReactiveCommand ALLClearCommand { get; } = new ReactiveCommand();
         public ReactiveCommand MenuCloseCommand { get; } = new ReactiveCommand();
         public AsyncReactiveCommand SettingResetCommand { get; } = new AsyncReactiveCommand();
         public MainViewModel()
@@ -212,7 +214,7 @@ namespace MHRiseModManager.ViewModels
 
                     Utility.CopyDirectory(targetDir, Settings.Default.GameDirectoryPath);
 
-                    Directory.Delete(targetDir, true);
+                    Utility.DirectorySafeDelete(targetDir, true);
                 });
 
                 await objController.CloseAsync();
@@ -238,7 +240,7 @@ namespace MHRiseModManager.ViewModels
                     return;
                 }
 
-                File.Delete(Path.Combine(Environment.CurrentDirectory, Settings.Default.DataBaseFileName));
+                Utility.FileSafeDelete(Path.Combine(Environment.CurrentDirectory, Settings.Default.DataBaseFileName));
 
                 Utility.CleanDirectory(Path.Combine(Environment.CurrentDirectory, Settings.Default.ModsCacheDirectoryName));
 
@@ -270,24 +272,71 @@ namespace MHRiseModManager.ViewModels
                     return;
                 }
 
-                var file = Path.Combine(Environment.CurrentDirectory, _NowSelectModInfo.ArchiveFilePath);
-
-                var dir = Path.Combine(Environment.CurrentDirectory, Path.GetDirectoryName(_NowSelectModInfo.ArchiveFilePath), Path.GetFileNameWithoutExtension(_NowSelectModInfo.ArchiveFilePath));
-
-                File.Delete(file);
-
-                Directory.Delete(dir, true);
-
-                _ModListManager.Delete(_NowSelectModInfo.Id);
+                Delete(_NowSelectModInfo);
 
                 await MahAppsDialogCoordinator.ShowMessageAsync(this, Assembly.GetEntryAssembly().GetName().Name, "Modの登録を削除しました。");
 
                 ModFileListReflesh();
             });
 
+            CSVImportCommand.Subscribe(async e =>
+            {
+                var dropFile = string.Empty;
+
+                using (var ofd = new System.Windows.Forms.OpenFileDialog() { FileName = "", Filter = "CSVファイル|*.csv" })
+                {
+                    if (ofd.ShowDialog() != System.Windows.Forms.DialogResult.OK)
+                    {
+                        return;
+                    }
+
+                    dropFile = ofd.FileName;
+                }
+
+                var controller = await MahAppsDialogCoordinator.ShowProgressAsync(this, Assembly.GetEntryAssembly().GetName().Name, "Modの新規登録中...");
+
+                var config = new CsvConfiguration(new CultureInfo("ja-JP", false))
+                {
+                    HasHeaderRecord = false,
+                    Encoding = Encoding.GetEncoding("Shift_JIS")
+                };
+
+                List<ImportCsv> records = null;
+                using (var reader = new StreamReader(dropFile, Encoding.GetEncoding("Shift_JIS")))
+                {
+                    using (var csv = new CsvReader(reader, config))
+                    {
+                        records = csv.GetRecords<ImportCsv>().ToList();
+                    }
+                }
+
+                foreach (var record in records)
+                {
+                    if (!File.Exists(record.FullFilePath))
+                    {
+                        await MahAppsDialogCoordinator.ShowMessageAsync(this, Assembly.GetEntryAssembly().GetName().Name, "存在しないファイルが含まれています。処理を終了します。\n" + record.FullFilePath);
+
+                        return;
+                    }
+                }
+
+                foreach (var record in records)
+                {
+                    await ModRegist(record.Name, record.Url, record.Memo, record.FullFilePath);
+                }
+
+                Utility.CleanDirectory(Path.Combine(Path.GetTempPath(), Settings.Default.TempDirectoryName));
+
+                ModFileListReflesh();
+
+                await controller.CloseAsync();
+
+                await MahAppsDialogCoordinator.ShowMessageAsync(this, Assembly.GetEntryAssembly().GetName().Name, "Modを新規登録しました。");
+            });
+
             CSVExportCommand.Subscribe(e =>
             {
-                var records = _ModListManager.SelectAll().Select(x => new CSVRecord() { Name = x.ModName, Url = x.URL, Memo = x.Memo});
+                var records = _ModListManager.SelectAll().Select(x => new CSVRecord() { Name = x.ModName, Url = x.URL, Memo = x.Memo });
 
                 var filePath = Path.Combine(Path.GetTempPath(), Path.ChangeExtension(Path.GetRandomFileName(), "csv"));
 
@@ -302,21 +351,57 @@ namespace MHRiseModManager.ViewModels
                 System.Diagnostics.Process.Start(filePath);
             });
 
+            ALLClearCommand.Subscribe(async e =>
+            {
+                var metroDialogSettings = new MetroDialogSettings()
+                {
+                    AffirmativeButtonText = "はい",
+                    NegativeButtonText = "いいえ",
+                    AnimateHide = true,
+                    AnimateShow = true,
+                    ColorScheme = MetroDialogColorScheme.Theme,
+                };
+
+                var diagResult = await MahAppsDialogCoordinator.ShowMessageAsync(this, Assembly.GetEntryAssembly().GetName().Name, "Modの登録を一括削除します。よろしいですか？", MessageDialogStyle.AffirmativeAndNegative, metroDialogSettings);
+
+                if (MessageDialogResult.Negative == diagResult)
+                {
+                    return;
+                }
+
+                foreach (var modInfo in _ModListManager.SelectAll().Where(x => x.Status == Status.未インストール))
+                {
+                    Delete(modInfo);
+                }
+
+                await MahAppsDialogCoordinator.ShowMessageAsync(this, Assembly.GetEntryAssembly().GetName().Name, "Modの登録を削除しました。");
+
+                ModFileListReflesh();
+            });
+
             MenuCloseCommand.Subscribe(x => ((Window)x).Close());
 
             ModFileListReflesh();
         }
 
+        private void Delete(ModInfo modinfo)
+        {
+            var file = Path.Combine(Environment.CurrentDirectory, modinfo.ArchiveFilePath);
+
+            var dir = Path.Combine(Environment.CurrentDirectory, Path.GetDirectoryName(modinfo.ArchiveFilePath), Path.GetFileNameWithoutExtension(modinfo.ArchiveFilePath));
+
+            Utility.FileSafeDelete(file);
+
+            Utility.DirectorySafeDelete(dir, true);
+
+            _ModListManager.Delete(modinfo.Id);
+        }
+
         private static void CleanCache()
         {
-            var dir = Environment.CurrentDirectory;
-            var cacheDir = Path.Combine(dir, Settings.Default.ModsCacheDirectoryName);
+            var cacheDir = Path.Combine(Environment.CurrentDirectory, Settings.Default.ModsCacheDirectoryName);
 
-            var di = new DirectoryInfo(cacheDir);
-            foreach (var d in di.GetDirectories())
-            {
-                d.Delete(true);
-            }
+            Utility.CleanDirectoryOnlyDirectory(cacheDir);
         }
 
         private async void OnFileDrop(DragEventArgs e)
@@ -344,31 +429,12 @@ namespace MHRiseModManager.ViewModels
                 var returnModel = dialog.DataContext as InstallDialogViewModel;
 
                 var dropFile = dropFiles[0];
-                string imagefile = null;
 
-                dropFile = PreProcess(dropFile);
+                var modName = string.IsNullOrEmpty(returnModel.Name.Value) ? null : returnModel.Name.Value;
 
-                if (dropFile == null)
-                {
-                    await MahAppsDialogCoordinator.ShowMessageAsync(this, Assembly.GetEntryAssembly().GetName().Name, "REFramework対応MOD以外のファイル形式です。\n処理を終了します。");
+                await ModRegist(modName, returnModel.URL.Value, returnModel.Memo.Value, dropFile);
 
-                    return;
-                }
-
-                await Task.Run(() =>
-                {
-                    var cacheDir = Utility.GetOrCreateDirectory(Path.Combine(Environment.CurrentDirectory, Settings.Default.ModsCacheDirectoryName));
-
-                    var targetFileName = Path.GetFileName(dropFile);
-                    var targetFile = Path.Combine(cacheDir, targetFileName);
-                    var modName = string.IsNullOrEmpty(returnModel.Name.Value) ? null : returnModel.Name.Value;
-
-                    File.Copy(dropFile, targetFile, true);
-
-                    _ModListManager.Insert(name: targetFileName, fileSize: new FileInfo(targetFile).Length, archiveFilePath: targetFile.Substring(Environment.CurrentDirectory.Length + 1), url: returnModel.URL.Value, memo: returnModel.Memo.Value, imagefilepath: imagefile, modName: modName);
-
-                    Utility.CleanDirectory(Path.Combine(Path.GetTempPath(), Settings.Default.TempDirectoryName));
-                });
+                Utility.CleanDirectory(Path.Combine(Path.GetTempPath(), Settings.Default.TempDirectoryName));
 
                 ModFileListReflesh();
 
@@ -380,6 +446,27 @@ namespace MHRiseModManager.ViewModels
             {
                 MessageBox.Show(ex.ToString());
             }
+        }
+
+        private async Task ModRegist(string modName, string url, string memo, string dropFile)
+        {
+            dropFile = PreProcess(dropFile);
+
+            if (dropFile == null)
+            {
+                await MahAppsDialogCoordinator.ShowMessageAsync(this, Assembly.GetEntryAssembly().GetName().Name, "REFramework対応MOD以外のファイル形式です。\n処理を終了します。");
+
+                return;
+            }
+
+            var cacheDir = Utility.GetOrCreateDirectory(Path.Combine(Environment.CurrentDirectory, Settings.Default.ModsCacheDirectoryName));
+
+            var targetFileName = Path.GetFileName(dropFile);
+            var targetFile = Path.Combine(cacheDir, targetFileName);
+
+            File.Copy(dropFile, targetFile, true);
+
+            _ModListManager.Insert(name: targetFileName, fileSize: new FileInfo(targetFile).Length, archiveFilePath: targetFile.Substring(Environment.CurrentDirectory.Length + 1), url: url, memo: memo, modName: modName);
         }
 
         private string PreProcess(string dropFile)
@@ -423,7 +510,7 @@ namespace MHRiseModManager.ViewModels
 
                 Utility.CompressionFile(Path.Combine(tempDir, tempFileName), resultFile);
 
-                Directory.Delete(Path.Combine(tempDir, tempFileName), true);
+                Utility.DirectorySafeDelete(Path.Combine(tempDir, tempFileName), true);
 
             }
             else if (mod.GetNewCategory() == Category.その他)
@@ -494,7 +581,9 @@ namespace MHRiseModManager.ViewModels
             {
                 set.Add(Path.GetDirectoryName(item.Path));
 
-                File.Delete(Path.Combine(Settings.Default.GameDirectoryPath, item.Path));
+                var path = Path.Combine(Settings.Default.GameDirectoryPath, item.Path);
+
+                Utility.FileSafeDelete(path);
             }
 
             var setDir = new HashSet<string>();
@@ -513,7 +602,7 @@ namespace MHRiseModManager.ViewModels
                 var dir = Path.Combine(Settings.Default.GameDirectoryPath, x);
                 if (Utility.IsEmptyDirectory(dir) && !dir.Equals(Settings.Default.GameDirectoryPath))
                 {
-                    Directory.Delete(dir);
+                    Utility.DirectorySafeDelete(dir);
                 }
             });
 

@@ -77,6 +77,16 @@ namespace MHRiseModManager.Utils
             }
         }
 
+        public static void CleanDirectoryOnlyDirectory(string path)
+        {
+            var di = new DirectoryInfo(path);
+
+            foreach (var d in di.GetDirectories())
+            {
+                d.Delete(true);
+            }
+        }
+
         public static bool IsEmptyDirectory(string path)
         {
             if (!Directory.Exists(path)) return false;
@@ -102,6 +112,10 @@ namespace MHRiseModManager.Utils
 
         public static void ExtractFile(string path, string dir)
         {
+            if(!File.Exists(path))
+            {
+                return;
+            }
             if(Path.GetExtension(path) == ".zip")
             {
                 ZipFile.ExtractToDirectory(path, dir);
@@ -130,10 +144,7 @@ namespace MHRiseModManager.Utils
 
         public static void CompressionFile(string dir, string path)
         {
-            if(File.Exists(path))
-            {
-                File.Delete(path);
-            }
+            FileSafeDelete(path);
 
             ZipFile.CreateFromDirectory(dir, path);
         }
@@ -191,6 +202,29 @@ namespace MHRiseModManager.Utils
                 }
 
                 return sections;
+            }
+        }
+        public static void DirectorySafeDelete(string path)
+        {
+            if (Directory.Exists(path))
+            {
+                Directory.Delete(path);
+            }
+        }
+
+        public static void DirectorySafeDelete(string path, bool recursive)
+        {
+            if(Directory.Exists(path))
+            {
+                Directory.Delete(path, recursive);
+            }
+        }
+
+        public static void FileSafeDelete(string path)
+        {
+            if (File.Exists(path))
+            {
+                File.Delete(path);
             }
         }
     }

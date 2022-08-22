@@ -49,8 +49,10 @@
             </MenuItem>
             <MenuItem Header="Mod(_M)">
                 <MenuItem Header="CSVインポート" Command="{Binding CSVImportCommand}"/>
+                <MenuItem Header="一括インストール" Command="{Binding AllInstallCommand}"/>
+                <MenuItem Header="一括アンインストール" Command="{Binding AllUnInstallCommand}"/>
+                <MenuItem Header="一括登録解除" Command="{Binding AllClearCommand}"/>
                 <MenuItem Header="CSVエクスポート" Command="{Binding CSVExportCommand}"/>
-                <MenuItem Header="一括登録解除" Command="{Binding ALLClearCommand}"/>
             </MenuItem>
             <MenuItem Header="設定(_S)">
                 <MenuItem Header="設定の初期化" Command="{Binding SettingResetCommand}"/>

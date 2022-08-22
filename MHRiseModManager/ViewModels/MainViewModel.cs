@@ -51,7 +51,9 @@ namespace MHRiseModManager.ViewModels
         public AsyncReactiveCommand RestoreCommand { get; } = new AsyncReactiveCommand();
         public ReactiveCommand CSVImportCommand { get; } = new ReactiveCommand();
         public ReactiveCommand CSVExportCommand { get; } = new ReactiveCommand();
-        public ReactiveCommand ALLClearCommand { get; } = new ReactiveCommand();
+        public ReactiveCommand AllClearCommand { get; } = new ReactiveCommand();
+        public ReactiveCommand AllInstallCommand { get; } = new ReactiveCommand();
+        public ReactiveCommand AllUnInstallCommand { get; } = new ReactiveCommand();
         public ReactiveCommand MenuCloseCommand { get; } = new ReactiveCommand();
         public AsyncReactiveCommand SettingResetCommand { get; } = new AsyncReactiveCommand();
         public MainViewModel()
@@ -110,11 +112,15 @@ namespace MHRiseModManager.ViewModels
             InstallCommand.Subscribe(e =>
             {
                 Install(_NowSelectModInfo);
+
+                ModFileListReflesh();
             });
 
             UnInstallCommand.Subscribe(e =>
             {
                 Uninstall(_NowSelectModInfo);
+
+                ModFileListReflesh();
             });
 
             CloseCommand.Subscribe(e =>
@@ -351,7 +357,7 @@ namespace MHRiseModManager.ViewModels
                 System.Diagnostics.Process.Start(filePath);
             });
 
-            ALLClearCommand.Subscribe(async e =>
+            AllClearCommand.Subscribe(async e =>
             {
                 var metroDialogSettings = new MetroDialogSettings()
                 {
@@ -377,6 +383,16 @@ namespace MHRiseModManager.ViewModels
                 await MahAppsDialogCoordinator.ShowMessageAsync(this, Assembly.GetEntryAssembly().GetName().Name, "Modの登録を削除しました。");
 
                 ModFileListReflesh();
+            });
+
+            AllInstallCommand.Subscribe(e =>
+            {
+
+            });
+
+            AllUnInstallCommand.Subscribe(e =>
+            {
+
             });
 
             MenuCloseCommand.Subscribe(x => ((Window)x).Close());
@@ -569,11 +585,9 @@ namespace MHRiseModManager.ViewModels
             }
 
             _ModListManager.Install(modInfo.Id, files, modInfo.Category);
-
-            ModFileListReflesh();
         }
 
-        private void Uninstall(ModInfo modInfo, bool detailDelete = false)
+        private void Uninstall(ModInfo modInfo)
         {
             var set = new HashSet<string>();
             var list = _ModListManager.SelectModFile(modInfo.Id);
@@ -607,15 +621,6 @@ namespace MHRiseModManager.ViewModels
             });
 
             _ModListManager.UpdateStatus(modInfo.Id, Status.未インストール, modInfo.Category);
-
-            if (detailDelete)
-            {
-                _ModListManager.DeleteDetail(modInfo.Id);
-            }
-            else
-            {
-                ModFileListReflesh();
-            }
         }
 
         public async void OnRowUpdate(ModInfo modInfo)
@@ -636,7 +641,15 @@ namespace MHRiseModManager.ViewModels
             }
 
             // アンインストール
-            Uninstall(modInfo, true);
+            Uninstall(modInfo);
+
+            _ModListManager.DeleteDetail(modInfo.Id);
+
+            var archiveFilePath = Path.Combine(Path.Combine(Environment.CurrentDirectory, modInfo.ArchiveFilePath));
+
+            Utility.FileSafeDelete(archiveFilePath);
+
+            Utility.DirectorySafeDelete(Utility.GetPathWithoutExtension(archiveFilePath), true);
 
             dropFile = PreProcess(dropFile);
 
@@ -663,6 +676,8 @@ namespace MHRiseModManager.ViewModels
 
             // インストール
             Install(newModInfo);
+
+            ModFileListReflesh();
         }
 
         public async void OnRowEdit(ModInfo modInfo)

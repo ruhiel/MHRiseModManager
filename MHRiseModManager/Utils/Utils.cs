@@ -227,5 +227,15 @@ namespace MHRiseModManager.Utils
                 File.Delete(path);
             }
         }
+
+        public static string GetPathWithoutExtension(string path)
+        {
+            var extension = Path.GetExtension(path);
+            if (string.IsNullOrEmpty(extension))
+            {
+                return path;
+            }
+            return path.Replace(extension, string.Empty);
+        }
     }
 }

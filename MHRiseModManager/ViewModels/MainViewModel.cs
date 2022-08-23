@@ -299,8 +299,6 @@ namespace MHRiseModManager.ViewModels
                     dropFile = ofd.FileName;
                 }
 
-                var controller = await MahAppsDialogCoordinator.ShowProgressAsync(this, Assembly.GetEntryAssembly().GetName().Name, "Modの新規登録中...");
-
                 var config = new CsvConfiguration(new CultureInfo("ja-JP", false))
                 {
                     HasHeaderRecord = false,
@@ -316,15 +314,25 @@ namespace MHRiseModManager.ViewModels
                     }
                 }
 
-                foreach (var record in records)
-                {
-                    if (!File.Exists(record.FullFilePath))
-                    {
-                        await MahAppsDialogCoordinator.ShowMessageAsync(this, Assembly.GetEntryAssembly().GetName().Name, "存在しないファイルが含まれています。処理を終了します。\n" + record.FullFilePath);
+                var noexists = records.Where(x => !File.Exists(x.FullFilePath)).Select(x => x.FullFilePath).OrderBy(x => x);
 
-                        return;
-                    }
+                if (noexists.Any())
+                {
+                    await MahAppsDialogCoordinator.ShowMessageAsync(this, Assembly.GetEntryAssembly().GetName().Name, "存在しないファイルが含まれています。処理を終了します。\n" + string.Join("\n", noexists));
+
+                    return;
                 }
+
+                var duplicate = Utility.FindDuplication(records.Select(x => x.FullFilePath)).OrderBy(x => x);
+
+                if (duplicate.Any())
+                {
+                    await MahAppsDialogCoordinator.ShowMessageAsync(this, Assembly.GetEntryAssembly().GetName().Name, "重複したファイルが含まれています。処理を終了します。\n" + string.Join("\n", duplicate));
+
+                    return;
+                }
+
+                var controller = await MahAppsDialogCoordinator.ShowProgressAsync(this, Assembly.GetEntryAssembly().GetName().Name, "Modの新規登録中...");
 
                 foreach (var record in records)
                 {

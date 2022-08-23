@@ -385,14 +385,36 @@ namespace MHRiseModManager.ViewModels
                 ModFileListReflesh();
             });
 
-            AllInstallCommand.Subscribe(e =>
+            AllInstallCommand.Subscribe(async e =>
             {
+                var controller = await MahAppsDialogCoordinator.ShowProgressAsync(this, Assembly.GetEntryAssembly().GetName().Name, "Modの一括インストール中...");
 
+                foreach (var modInfo in _ModListManager.SelectAll().Where(x => x.Status == Status.未インストール))
+                {
+                    Install(modInfo);
+                }
+
+                await controller.CloseAsync();
+
+                await MahAppsDialogCoordinator.ShowMessageAsync(this, Assembly.GetEntryAssembly().GetName().Name, "Modを一括インストールしました。");
+
+                ModFileListReflesh();
             });
 
-            AllUnInstallCommand.Subscribe(e =>
+            AllUnInstallCommand.Subscribe(async e =>
             {
+                var controller = await MahAppsDialogCoordinator.ShowProgressAsync(this, Assembly.GetEntryAssembly().GetName().Name, "Modの一括アンインストール中...");
 
+                foreach (var modInfo in _ModListManager.SelectAll().Where(x => x.Status == Status.インストール済))
+                {
+                    Uninstall(modInfo);
+                }
+
+                await controller.CloseAsync();
+
+                await MahAppsDialogCoordinator.ShowMessageAsync(this, Assembly.GetEntryAssembly().GetName().Name, "Modを一括アンインストールしました。");
+
+                ModFileListReflesh();
             });
 
             MenuCloseCommand.Subscribe(x => ((Window)x).Close());
@@ -417,7 +439,7 @@ namespace MHRiseModManager.ViewModels
         {
             var cacheDir = Path.Combine(Environment.CurrentDirectory, Settings.Default.ModsCacheDirectoryName);
 
-            Utility.CleanDirectoryOnlyDirectory(cacheDir);
+            Utility.CleanDirectory(cacheDir);
         }
 
         private async void OnFileDrop(DragEventArgs e)
@@ -482,7 +504,7 @@ namespace MHRiseModManager.ViewModels
 
             File.Copy(dropFile, targetFile, true);
 
-            _ModListManager.Insert(name: targetFileName, fileSize: new FileInfo(targetFile).Length, archiveFilePath: targetFile.Substring(Environment.CurrentDirectory.Length + 1), url: url, memo: memo, modName: modName);
+            _ModListManager.Insert(name: targetFileName, targetFile: targetFile, url: url, memo: memo, modName: modName);
         }
 
         private string PreProcess(string dropFile)
@@ -494,7 +516,7 @@ namespace MHRiseModManager.ViewModels
             var targetFile = Path.Combine(tempDir, Path.GetFileName(dropFile));
             File.Copy(dropFile, targetFile, true);
 
-            var mod = new ModInfo(id: 1, name: "", status: Status.未インストール, fileSize: new FileInfo(targetFile).Length, dateCreated: DateTime.Now, category: Category.Lua, archiveFilePath: targetFile, url: "", memo: "");
+            var mod = new ModInfo(id: 1, name: "", status: Status.未インストール, fileSize: new FileInfo(targetFile).Length, dateCreated: DateTime.Now, category: Category.Lua, archiveFilePath: targetFile, modFileBinary:null, url: "", memo: "");
 
             if (mod.GetNewCategory() == Category.Lua && !mod.GetFileTree().Any(x => !x.IsFile && x.Name == "reframework"))
             {
@@ -543,7 +565,7 @@ namespace MHRiseModManager.ViewModels
 
             _ModListManager.SelectAll().ForEach(x =>
             {
-                ModInfoList.Add(new ModInfo(id: x.Id, name: x.Name, status: x.Status, fileSize: x.FileSize, dateCreated: x.DateCreated, category: x.Category, archiveFilePath: x.ArchiveFilePath, url: x.URL, imageFilePath: x.ImageFilePath, memo: x.Memo, modName: x.ModName, mainViewModel: this));
+                ModInfoList.Add(new ModInfo(id: x.Id, name: x.Name, status: x.Status, fileSize: x.FileSize, dateCreated: x.DateCreated, category: x.Category, archiveFilePath: x.ArchiveFilePath, url: x.URL, imageFilePath: x.ImageFilePath, memo: x.Memo, modName: x.ModName, modFileBinary:x.ModFileBinary, mainViewModel: this));
             });
 
             NowModPath.Value = string.Empty;
@@ -666,10 +688,10 @@ namespace MHRiseModManager.ViewModels
 
                 var targetFileName = Path.GetFileName(dropFile);
                 var targetFile = Path.Combine(cacheDir, targetFileName);
-
+                
                 File.Copy(dropFile, targetFile, true);
 
-                newModInfo = _ModListManager.Update(id: modInfo.Id, fileSize: new FileInfo(targetFile).Length, archiveFilePath: targetFile.Substring(Environment.CurrentDirectory.Length + 1));
+                newModInfo = _ModListManager.Update(id: modInfo.Id, targetFile: targetFile);
 
                 Utility.CleanDirectory(Path.Combine(Path.GetTempPath(), Settings.Default.TempDirectoryName));
             });

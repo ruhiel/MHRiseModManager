@@ -92,6 +92,13 @@ namespace MHRiseModManager.Models
             get => _ModName;
             set => SetProperty(ref _ModName, value);
         }
+        [Column(Name = "modfilebinary", CanBeNull = true)]
+        private byte[] _ModFileBinary;
+        public byte[] ModFileBinary
+        {
+            get => _ModFileBinary;
+            set => SetProperty(ref _ModFileBinary, value);
+        }
 
         public ModInfo() { }
 
@@ -100,6 +107,12 @@ namespace MHRiseModManager.Models
             get
             {
                 var archiveFile = Path.Combine(Environment.CurrentDirectory, ArchiveFilePath);
+
+                if(!File.Exists(archiveFile))
+                {
+                    File.WriteAllBytes(archiveFile, ModFileBinary);
+                }
+
                 var targetDir = Path.Combine(Path.GetDirectoryName(archiveFile), Path.GetFileNameWithoutExtension(archiveFile));
 
                 if (!Directory.Exists(targetDir))
@@ -142,7 +155,7 @@ namespace MHRiseModManager.Models
 
         private MainViewModel _MainViewModel;
 
-        public ModInfo(int id, string name, Status status, long fileSize, DateTime dateCreated, Category category, string archiveFilePath, string url, string memo, string modName = null, string imageFilePath = null, MainViewModel mainViewModel = null)
+        public ModInfo(int id, string name, Status status, long fileSize, DateTime dateCreated, Category category, string archiveFilePath, string url, string memo, string modName = null, string imageFilePath = null, byte[] modFileBinary = null, MainViewModel mainViewModel = null)
         {
             Id = id;
             Name = name;
@@ -155,6 +168,7 @@ namespace MHRiseModManager.Models
             ImageFilePath = imageFilePath;
             Memo = memo;
             ModName = modName;
+            ModFileBinary = modFileBinary;
             _MainViewModel = mainViewModel;
 
             ModUpdateCommand.Subscribe(_ =>

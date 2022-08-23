@@ -1,6 +1,7 @@
 ﻿using MHRiseModManager.Properties;
 using System;
 using System.Collections.Generic;
+using System.Data;
 using System.Data.Linq;
 using System.Data.SQLite;
 using System.IO;
@@ -31,7 +32,8 @@ namespace MHRiseModManager.Models
                         "imagefilepath TEXT," +
                         "url TEXT," +
                         "memo TEXT," +
-                        "modname TEXT)";
+                        "modname TEXT," +
+                        "modfilebinary BLOB)";
 
                         command.ExecuteNonQuery();
 
@@ -53,18 +55,25 @@ namespace MHRiseModManager.Models
 
         }
 
-        public void Insert(string name, long fileSize, string archiveFilePath, string url, string modName = null, string memo = null, DateTime? dateCreated = null, Status status = Status.未インストール)
+        public void Insert(string name, string targetFile, string url, string modName = null, string memo = null, DateTime? dateCreated = null, Status status = Status.未インストール)
         {
             var dt = dateCreated ?? DateTime.Now;
 
-            var mod = new ModInfo(id: 1, name: name, status: status, fileSize: fileSize, dateCreated: dt, category: Category.Lua, archiveFilePath: archiveFilePath, url: url, memo:memo);
+            string archiveFilePath = targetFile.Substring(Environment.CurrentDirectory.Length + 1);
+
+            var fileBinaryFrom = File.ReadAllBytes(targetFile);
+
+            var fileSize = fileBinaryFrom.Length;
+
+            var mod = new ModInfo(id: 1, name: name, status: status, fileSize: fileSize, dateCreated: dt, category: Category.Lua, archiveFilePath: archiveFilePath, url: url, memo: memo, modFileBinary:fileBinaryFrom);
 
             // コネクションを開いてテーブル作成して閉じる  
             using (var con = new SQLiteConnection($"Data Source={Settings.Default.DataBaseFileName}"))
             {
                 con.Open();
-                string sql = $"insert into modinfo (name, status, filesize, datecreated, category, archivefilepath, url{(memo == null ? "" : ", memo")}{(modName == null ? "" : ", modname")}) values ('{name.Replace("'", "''")}', {(int)status}, {fileSize}, '{dt.ToString("yyyy-MM-dd HH:mm:ss")}', {(int)mod.GetNewCategory()}, '{archiveFilePath.Replace("'", "''")}', '{url}'{(memo == null ? "" : ", '" + memo + "'")}{(modName == null ? "" : ", '" + modName + "'")});";
+                string sql = $"insert into modinfo (name, status, filesize, datecreated, category, archivefilepath, url{(memo == null ? "" : ", memo")}{(modName == null ? "" : ", modname")}, modfilebinary) values ('{name.Replace("'", "''")}', {(int)status}, {fileSize}, '{dt.ToString("yyyy-MM-dd HH:mm:ss")}', {(int)mod.GetNewCategory()}, '{archiveFilePath.Replace("'", "''")}', '{url}'{(memo == null ? "" : ", '" + memo + "'")}{(modName == null ? "" : ", '" + modName + "'")}, @file_binary);";
                 SQLiteCommand com = new SQLiteCommand(sql, con);
+                com.Parameters.Add("@file_binary", DbType.Binary).Value = fileBinaryFrom;
                 com.ExecuteNonQuery();
 
                 con.Close();
@@ -179,14 +188,21 @@ namespace MHRiseModManager.Models
             }
         }
 
-        public ModInfo Update(int id, long fileSize, string archiveFilePath)
+        public ModInfo Update(int id, string targetFile)
         {
+            string archiveFilePath = targetFile.Substring(Environment.CurrentDirectory.Length + 1);
+
+            var fileBinaryFrom = File.ReadAllBytes(targetFile);
+
+            var fileSize = fileBinaryFrom.Length;
+
             // コネクションを開いてテーブル作成して閉じる  
             using (var con = new SQLiteConnection($"Data Source={Settings.Default.DataBaseFileName}"))
             {
                 con.Open();
-                string sql = $"update modinfo set filesize = {(int)fileSize}, archivefilepath = '{archiveFilePath}' where id = {id}";
+                string sql = $"update modinfo set name = '{Path.GetFileName(archiveFilePath)}', filesize = {(int)fileSize}, archivefilepath = '{archiveFilePath}', modfilebinary = @file_binary where id = {id}";
                 var com = new SQLiteCommand(sql, con);
+                com.Parameters.Add("@file_binary", DbType.Binary).Value = fileBinaryFrom;
                 com.ExecuteNonQuery();
 
                 con.Close();

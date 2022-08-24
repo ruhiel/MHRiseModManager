@@ -33,11 +33,10 @@ namespace MHRiseModManager.Models
                         "url TEXT," +
                         "memo TEXT," +
                         "modname TEXT," +
+                        "version TEXT," +
                         "modfilebinary BLOB)";
 
                         command.ExecuteNonQuery();
-
-
                     }
                     using (SQLiteCommand command = con.CreateCommand())
                     {
@@ -55,7 +54,7 @@ namespace MHRiseModManager.Models
 
         }
 
-        public void Insert(string name, string targetFile, string url, string modName = null, string memo = null, DateTime? dateCreated = null, Status status = Status.未インストール)
+        public void Insert(string name, string targetFile, string url, string version, string modName = null, string memo = null, DateTime? dateCreated = null, Status status = Status.未インストール)
         {
             var dt = dateCreated ?? DateTime.Now;
 
@@ -71,14 +70,13 @@ namespace MHRiseModManager.Models
             using (var con = new SQLiteConnection($"Data Source={Settings.Default.DataBaseFileName}"))
             {
                 con.Open();
-                string sql = $"insert into modinfo (name, status, filesize, datecreated, category, archivefilepath, url{(memo == null ? "" : ", memo")}{(modName == null ? "" : ", modname")}, modfilebinary) values ('{name.Replace("'", "''")}', {(int)status}, {fileSize}, '{dt.ToString("yyyy-MM-dd HH:mm:ss")}', {(int)mod.GetNewCategory()}, '{archiveFilePath.Replace("'", "''")}', '{url}'{(memo == null ? "" : ", '" + memo + "'")}{(modName == null ? "" : ", '" + modName + "'")}, @file_binary);";
+                string sql = $"insert into modinfo (name, status, filesize, datecreated, category, archivefilepath, url{(memo == null ? "" : ", memo")}{(modName == null ? "" : ", modname")}{(version == null ? "" : ", version")}, modfilebinary) values ('{name.Replace("'", "''")}', {(int)status}, {fileSize}, '{dt.ToString("yyyy-MM-dd HH:mm:ss")}', {(int)mod.GetNewCategory()}, '{archiveFilePath.Replace("'", "''")}', '{url}'{(memo == null ? "" : ", '" + memo + "'")}{(modName == null ? "" : ", '" + modName + "'")}{(version == null ? "" : ", '" + version + "'")}, @file_binary);";
                 SQLiteCommand com = new SQLiteCommand(sql, con);
                 com.Parameters.Add("@file_binary", DbType.Binary).Value = fileBinaryFrom;
                 com.ExecuteNonQuery();
 
                 con.Close();
             }
-
         }
 
         public List<ModInfo> SelectAll()
@@ -211,13 +209,13 @@ namespace MHRiseModManager.Models
             return SelectAll().Where(x => x.Id == id).First();
         }
 
-        public ModInfo Update(int id, string name, string url, string memo)
+        public ModInfo Update(int id, string name, string url, string memo, string version)
         {
             // コネクションを開いてテーブル作成して閉じる  
             using (var con = new SQLiteConnection($"Data Source={Settings.Default.DataBaseFileName}"))
             {
                 con.Open();
-                string sql = $"update modinfo set modname = '{name}', url = '{url}', memo = '{memo}' where id = {id}";
+                string sql = $"update modinfo set modname = '{name}', url = '{url}', memo = '{memo}', version = '{version}' where id = {id}";
                 var com = new SQLiteCommand(sql, con);
                 com.ExecuteNonQuery();
 

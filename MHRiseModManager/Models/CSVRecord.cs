@@ -15,5 +15,7 @@ namespace MHRiseModManager.Models
         public string Url { get; set; }
         [Index(2)]
         public string Memo { get; set; }
+        [Index(3)]
+        public string Version { get; set; }
     }
 }

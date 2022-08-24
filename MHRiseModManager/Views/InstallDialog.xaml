@@ -29,14 +29,17 @@
             <Grid.RowDefinitions>
                 <RowDefinition Height="*" />
                 <RowDefinition Height="*" />
+                <RowDefinition Height="*" />
                 <RowDefinition Height="8*" />
             </Grid.RowDefinitions>
             <TextBlock Grid.Row="0" Grid.Column="1" Padding="5" Text="Mod名(任意)" Margin="5"/>
             <TextBox Grid.Row="0" Grid.Column="2" Margin="5" Text="{Binding Name.Value}"/>
             <TextBlock Grid.Row="1" Grid.Column="1" Padding="5" Text="URL(任意)" Margin="5"/>
             <TextBox Grid.Row="1" Grid.Column="2" Margin="5" Text="{Binding URL.Value}"/>
-            <TextBlock Grid.Row="2" Grid.Column="1" Padding="5" Text="メモ(任意)" Margin="5"/>
-            <TextBox Grid.Row="2" Grid.Column="2" Margin="5" Text="{Binding Memo.Value}" TextWrapping="Wrap" AcceptsReturn="True" VerticalScrollBarVisibility="Visible"/>
+            <TextBlock Grid.Row="2" Grid.Column="1" Padding="5" Text="バージョン(任意)" Margin="5"/>
+            <TextBox Grid.Row="2" Grid.Column="2" Margin="5" Text="{Binding Version.Value}"/>
+            <TextBlock Grid.Row="3" Grid.Column="1" Padding="5" Text="メモ(任意)" Margin="5"/>
+            <TextBox Grid.Row="3" Grid.Column="2" Margin="5" Text="{Binding Memo.Value}" TextWrapping="Wrap" AcceptsReturn="True" VerticalScrollBarVisibility="Visible"/>
         </Grid>
         <StackPanel Grid.Row="1" Orientation="Vertical">
             <Button Width="100" Content="OK" Command="{Binding CloseWindow}" CommandParameter="{Binding RelativeSource={RelativeSource Mode=FindAncestor, AncestorType=Window}}" Margin="5"/>

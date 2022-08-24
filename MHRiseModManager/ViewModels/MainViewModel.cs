@@ -42,6 +42,7 @@ namespace MHRiseModManager.ViewModels
         private ModInfo _NowSelectModInfo;
         public ObservableCollection<ModInfo> ModInfoList { get; set; } = new ObservableCollection<ModInfo>();
         public ReactiveProperty<string> NowModURL { get; } = new ReactiveProperty<string>();
+        public ReactiveProperty<string> NowVersion { get; } = new ReactiveProperty<string>();
         public ReactiveCommand<object> NavigateCommand { get; } = new ReactiveCommand<Object>();
         public ReactiveCommand<object> SelectGameFolderCommand { get; } = new ReactiveCommand<Object>();
         public ReactiveCommand<object> OpenGameFolderCommand { get; } = new ReactiveCommand<Object>();
@@ -88,6 +89,8 @@ namespace MHRiseModManager.ViewModels
                     NowMemo.Value = modInfo.Memo;
 
                     NowModURL.Value = modInfo.URL;
+
+                    NowVersion.Value = modInfo.Version;
 
                     if (string.IsNullOrEmpty(modInfo.ImageFilePath))
                     {
@@ -301,7 +304,7 @@ namespace MHRiseModManager.ViewModels
 
                 var config = new CsvConfiguration(new CultureInfo("ja-JP", false))
                 {
-                    HasHeaderRecord = false,
+                    HasHeaderRecord = true,
                     Encoding = Encoding.GetEncoding("Shift_JIS")
                 };
 
@@ -336,7 +339,7 @@ namespace MHRiseModManager.ViewModels
 
                 foreach (var record in records)
                 {
-                    await ModRegist(record.Name, record.Url, record.Memo, record.FullFilePath);
+                    await ModRegist(modName:record.Name, url:record.Url, memo:record.Memo, version:record.Version, dropFile:record.FullFilePath);
                 }
 
                 Utility.CleanDirectory(Path.Combine(Path.GetTempPath(), Settings.Default.TempDirectoryName));
@@ -350,13 +353,18 @@ namespace MHRiseModManager.ViewModels
 
             CSVExportCommand.Subscribe(e =>
             {
-                var records = _ModListManager.SelectAll().Select(x => new CSVRecord() { Name = x.ModName, Url = x.URL, Memo = x.Memo });
-
                 var filePath = Path.Combine(Path.GetTempPath(), Path.ChangeExtension(Path.GetRandomFileName(), "csv"));
 
+                var config = new CsvConfiguration(new CultureInfo("ja-JP", false))
+                {
+                    HasHeaderRecord = true,
+                    Encoding = Encoding.GetEncoding("Shift_JIS")
+                };
+
+                var records = _ModListManager.SelectAll().Select(x => new CSVRecord() { Name = x.ModName, Url = x.URL, Memo = x.Memo, Version = x.Version });
                 using (var writer = new StreamWriter(filePath, false, Encoding.GetEncoding("Shift_JIS")))
                 {
-                    using (var csv = new CsvWriter(writer, new CultureInfo("ja-JP", false)))
+                    using (var csv = new CsvWriter(writer, config))
                     {
                         csv.WriteRecords(records);
                     }
@@ -478,7 +486,7 @@ namespace MHRiseModManager.ViewModels
 
                 var modName = string.IsNullOrEmpty(returnModel.Name.Value) ? null : returnModel.Name.Value;
 
-                await ModRegist(modName, returnModel.URL.Value, returnModel.Memo.Value, dropFile);
+                await ModRegist(modName:modName, url:returnModel.URL.Value, memo:returnModel.Memo.Value, version:returnModel.Version.Value, dropFile:dropFile);
 
                 Utility.CleanDirectory(Path.Combine(Path.GetTempPath(), Settings.Default.TempDirectoryName));
 
@@ -494,7 +502,7 @@ namespace MHRiseModManager.ViewModels
             }
         }
 
-        private async Task ModRegist(string modName, string url, string memo, string dropFile)
+        private async Task ModRegist(string modName, string url, string memo, string version, string dropFile)
         {
             dropFile = PreProcess(dropFile);
 
@@ -512,7 +520,7 @@ namespace MHRiseModManager.ViewModels
 
             File.Copy(dropFile, targetFile, true);
 
-            _ModListManager.Insert(name: targetFileName, targetFile: targetFile, url: url, memo: memo, modName: modName);
+            _ModListManager.Insert(name: targetFileName, targetFile: targetFile, url: url, memo: memo, modName: modName, version: version);
         }
 
         private string PreProcess(string dropFile)
@@ -573,7 +581,7 @@ namespace MHRiseModManager.ViewModels
 
             _ModListManager.SelectAll().ForEach(x =>
             {
-                ModInfoList.Add(new ModInfo(id: x.Id, name: x.Name, status: x.Status, fileSize: x.FileSize, dateCreated: x.DateCreated, category: x.Category, archiveFilePath: x.ArchiveFilePath, url: x.URL, imageFilePath: x.ImageFilePath, memo: x.Memo, modName: x.ModName, modFileBinary:x.ModFileBinary, mainViewModel: this));
+                ModInfoList.Add(new ModInfo(id: x.Id, name: x.Name, status: x.Status, fileSize: x.FileSize, dateCreated: x.DateCreated, category: x.Category, archiveFilePath: x.ArchiveFilePath, url: x.URL, imageFilePath: x.ImageFilePath, memo: x.Memo, modName: x.ModName, modFileBinary:x.ModFileBinary, version:x.Version, mainViewModel: this));
             });
 
             NowModPath.Value = string.Empty;
@@ -589,6 +597,8 @@ namespace MHRiseModManager.ViewModels
             NowMemo.Value = string.Empty;
 
             NowModURL.Value = string.Empty;
+
+            NowVersion.Value = string.Empty;
 
             ModFileTree.Clear();
         }
@@ -719,10 +729,11 @@ namespace MHRiseModManager.ViewModels
             returnModel.URL.Value = modInfo.URL;
             returnModel.Name.Value = modInfo.ModName;
             returnModel.Memo.Value = modInfo.Memo;
+            returnModel.Version.Value = modInfo.Version;
 
             dialog.ShowDialog();
 
-            _ModListManager.Update(id: modInfo.Id, name: returnModel.Name.Value, url: returnModel.URL.Value, memo: returnModel.Memo.Value);
+            _ModListManager.Update(id: modInfo.Id, name: returnModel.Name.Value, url: returnModel.URL.Value, memo: returnModel.Memo.Value, version: returnModel.Version.Value);
 
             ModFileListReflesh();
 

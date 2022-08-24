@@ -16,6 +16,8 @@ namespace MHRiseModManager.Models
         [Index(2)]
         public string Memo { get; set; }
         [Index(3)]
+        public string Version { get; set; }
+        [Index(4)]
         public string FullFilePath { get; set; }
     }
 }

@@ -490,7 +490,8 @@ namespace MHRiseModManager.ViewModels
                     checkList.Add(Tuple.Create(modInfo.ModName, modInfo.Version, version));
                 }
                 controller.SetProgress(i);
-                controller.SetMessage($"Modバージョンチェック中...\n処理数:{i} / {list.Count}");
+                var rate = 100 * i / list.Count;
+                controller.SetMessage($"Modバージョンチェック中 {i} / {list.Count} ({rate}%)...");
                 i++;
             }
 

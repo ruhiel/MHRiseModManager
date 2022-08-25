@@ -28,6 +28,7 @@ namespace MHRiseModManager.ViewModels
     public class MainViewModel
     {
         private CompositeDisposable Disposable { get; } = new CompositeDisposable();
+        public ReactiveCommand ShownCommand { get; } = new ReactiveCommand();
         public ReactiveCommand CloseCommand { get; } = new ReactiveCommand();
         public ReactiveCommand InstallCommand { get; } = new ReactiveCommand();
         public ReactiveCommand UnInstallCommand { get; } = new ReactiveCommand();
@@ -111,8 +112,6 @@ namespace MHRiseModManager.ViewModels
                         ModFileTree.Add(item);
                     }
                 }
-
-                await CheckVersionAsync(modInfo);
             });
 
             InstallCommand.Subscribe(e =>
@@ -435,43 +434,58 @@ namespace MHRiseModManager.ViewModels
 
                 ModFileListReflesh();
             });
+            ShownCommand.Subscribe(async e =>
+            {
+                var checkList = await CheckListAsync();
 
+                if (checkList.Count > 0)
+                {
+                    await MahAppsDialogCoordinator.ShowMessageAsync(this, Assembly.GetEntryAssembly().GetName().Name, $"以下の新しいバージョンのModが公開されています。\n {string.Join("\n", checkList.Select(x => $"{x.Item1} ({x.Item2}) → ({x.Item3})"))}" );
+                }
+            });
             MenuCloseCommand.Subscribe(x => ((Window)x).Close());
 
             ModFileListReflesh();
         }
 
-        private async Task CheckVersionAsync(ModInfo modInfo)
+        private async Task<List<Tuple<string, string, string>>> CheckListAsync()
         {
-            var path = Utility.GetOrCreateDirectory(Path.Combine(Environment.CurrentDirectory, Settings.Default.WebCache));
-            var filePath = Path.Combine(path, $"{modInfo.Id}.html");
+            var controller = await MahAppsDialogCoordinator.ShowProgressAsync(this, Assembly.GetEntryAssembly().GetName().Name, "Modバージョンチェック中...");
 
-            if (File.Exists(filePath) && new FileInfo(filePath).Length == 0)
+            var checkList = new List<Tuple<string, string, string>>();
+            var list = _ModListManager.SelectAll();
+
+            int i = 1;
+            controller.Minimum = i;
+            controller.Maximum = list.Count;
+
+            var reg = new Regex("<meta property=\"twitter:data1\" content=\"(.+)\" />");
+
+            foreach (var modInfo in list)
             {
-                return;
-            }
-            else if (!string.IsNullOrEmpty(modInfo.URL))
-            {
+                var path = Utility.GetOrCreateDirectory(Path.Combine(Environment.CurrentDirectory, Settings.Default.WebCache));
+                var filePath = Path.Combine(path, $"{modInfo.Id}.html");
+
                 await downloadFileAsync(modInfo.URL, filePath);
 
-                var reg = new Regex("<meta property=\"twitter:data1\" content=\"(.+)\" />");
-
-                var version = File.ReadAllLines(filePath, Encoding.GetEncoding("utf-8")).Select(x => reg.Match(x)).Where(x => x.Success).Select(x => x.Groups[1].Value).FirstOrDefault();
+                var versions = await FileEx.ReadAllLinesAsync(filePath, Encoding.GetEncoding("utf-8"));
+                    
+                var version = versions.Select(x => reg.Match(x)).Where(x => x.Success).Select(x => x.Groups[1].Value).FirstOrDefault();
 
                 if (!string.IsNullOrEmpty(version) && !modInfo.Version.Equals(version))
                 {
-                    await MahAppsDialogCoordinator.ShowMessageAsync(this, Assembly.GetEntryAssembly().GetName().Name, $"{modInfo.ModName}の異なるバージョン{version}のModが公開されています。");
+                    checkList.Add(Tuple.Create(modInfo.ModName, modInfo.Version, version));
                 }
-
-                File.WriteAllText(filePath, string.Empty);
-            }
-            else
-            {
-                return;
+                controller.SetProgress(i);
+                controller.SetMessage($"Modバージョンチェック中...\n処理数:{i} / {list.Count}");
+                i++;
             }
 
+            await controller.CloseAsync();
 
+            return checkList;
         }
+
         private async Task downloadFileAsync(string uri, string outputPath)
         {
             var client = new HttpClient();

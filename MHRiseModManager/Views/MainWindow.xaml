@@ -33,6 +33,9 @@
         <i:EventTrigger EventName="Closed">
             <rp:EventToReactiveCommand Command="{Binding CloseCommand}"/>
         </i:EventTrigger>
+        <i:EventTrigger EventName="Loaded">
+            <rp:EventToReactiveCommand Command="{Binding ShownCommand}"/>
+        </i:EventTrigger>
     </i:Interaction.Triggers>
     <Grid>
         <Grid.RowDefinitions>

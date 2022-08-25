@@ -23,5 +23,8 @@
     <Setting Name="ResourceDirectoryName" Type="System.String" Scope="User">
       <Value Profile="(Default)">Resource</Value>
     </Setting>
+    <Setting Name="WebCache" Type="System.String" Scope="User">
+      <Value Profile="(Default)">WebCache</Value>
+    </Setting>
   </Settings>
 </SettingsFile>

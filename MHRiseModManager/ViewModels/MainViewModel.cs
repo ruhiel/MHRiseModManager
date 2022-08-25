@@ -19,6 +19,9 @@ using CsvHelper;
 using System.Globalization;
 using System.Text;
 using CsvHelper.Configuration;
+using System.Net;
+using System.Text.RegularExpressions;
+using System.Net.Http;
 
 namespace MHRiseModManager.ViewModels
 {
@@ -68,7 +71,7 @@ namespace MHRiseModManager.ViewModels
                 }
             });
 
-            SelectionChanged.Subscribe(x =>
+            SelectionChanged.Subscribe(async x =>
             {
                 var datagrid = (DataGrid)x.sender;
 
@@ -109,8 +112,8 @@ namespace MHRiseModManager.ViewModels
                     }
                 }
 
+                await CheckVersionAsync(modInfo);
             });
-
 
             InstallCommand.Subscribe(e =>
             {
@@ -438,6 +441,52 @@ namespace MHRiseModManager.ViewModels
             ModFileListReflesh();
         }
 
+        private async Task CheckVersionAsync(ModInfo modInfo)
+        {
+            var path = Utility.GetOrCreateDirectory(Path.Combine(Environment.CurrentDirectory, Settings.Default.WebCache));
+            var filePath = Path.Combine(path, $"{modInfo.Id}.html");
+
+            if (File.Exists(filePath) && new FileInfo(filePath).Length == 0)
+            {
+                return;
+            }
+            else if (!string.IsNullOrEmpty(modInfo.URL))
+            {
+                await downloadFileAsync(modInfo.URL, filePath);
+
+                var reg = new Regex("<meta property=\"twitter:data1\" content=\"(.+)\" />");
+
+                var version = File.ReadAllLines(filePath, Encoding.GetEncoding("utf-8")).Select(x => reg.Match(x)).Where(x => x.Success).Select(x => x.Groups[1].Value).FirstOrDefault();
+
+                if (!string.IsNullOrEmpty(version) && !modInfo.Version.Equals(version))
+                {
+                    await MahAppsDialogCoordinator.ShowMessageAsync(this, Assembly.GetEntryAssembly().GetName().Name, $"{modInfo.ModName}の異なるバージョン{version}のModが公開されています。");
+                }
+
+                File.WriteAllText(filePath, string.Empty);
+            }
+            else
+            {
+                return;
+            }
+
+
+        }
+        private async Task downloadFileAsync(string uri, string outputPath)
+        {
+            var client = new HttpClient();
+            HttpResponseMessage res = await client.GetAsync(uri, HttpCompletionOption.ResponseHeadersRead);
+
+            using (var fileStream = File.Create(outputPath))
+            {
+                using (var httpStream = await res.Content.ReadAsStreamAsync())
+                {
+                    httpStream.CopyTo(fileStream);
+                    fileStream.Flush();
+                }
+            }
+        }
+
         private void Delete(ModInfo modinfo)
         {
             var file = Path.Combine(Environment.CurrentDirectory, modinfo.ArchiveFilePath);
@@ -456,6 +505,10 @@ namespace MHRiseModManager.ViewModels
             var cacheDir = Path.Combine(Environment.CurrentDirectory, Settings.Default.ModsCacheDirectoryName);
 
             Utility.CleanDirectory(cacheDir);
+
+            var webCachepath = Utility.GetOrCreateDirectory(Path.Combine(Environment.CurrentDirectory, Settings.Default.WebCache));
+
+            Utility.CleanDirectory(webCachepath);
         }
 
         private async void OnFileDrop(DragEventArgs e)
@@ -719,7 +772,6 @@ namespace MHRiseModManager.ViewModels
 
             ModFileListReflesh();
         }
-
         public async void OnRowEdit(ModInfo modInfo)
         {
             var dialog = new InstallDialog();

@@ -106,5 +106,17 @@ namespace MHRiseModManager.Properties {
                 this["ResourceDirectoryName"] = value;
             }
         }
+        
+        [global::System.Configuration.UserScopedSettingAttribute()]
+        [global::System.Diagnostics.DebuggerNonUserCodeAttribute()]
+        [global::System.Configuration.DefaultSettingValueAttribute("WebCache")]
+        public string WebCache {
+            get {
+                return ((string)(this["WebCache"]));
+            }
+            set {
+                this["WebCache"] = value;
+            }
+        }
     }
 }

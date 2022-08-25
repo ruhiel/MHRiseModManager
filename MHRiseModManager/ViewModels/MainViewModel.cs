@@ -60,7 +60,9 @@ namespace MHRiseModManager.ViewModels
         public ReactiveCommand AllInstallCommand { get; } = new ReactiveCommand();
         public ReactiveCommand AllUnInstallCommand { get; } = new ReactiveCommand();
         public ReactiveCommand MenuCloseCommand { get; } = new ReactiveCommand();
+        public ReactiveCommand SettingCommand { get; } = new ReactiveCommand();
         public AsyncReactiveCommand SettingResetCommand { get; } = new AsyncReactiveCommand();
+        public ReactiveCommand VersionCheckCommand { get; } = new ReactiveCommand();
         public MainViewModel()
         {
             FileDropCommand = new ReactiveCommand<DragEventArgs>().AddTo(Disposable);
@@ -232,7 +234,11 @@ namespace MHRiseModManager.ViewModels
 
                 await MahAppsDialogCoordinator.ShowMessageAsync(this, Assembly.GetEntryAssembly().GetName().Name, "リストアを完了しました。");
             });
-
+            SettingCommand.Subscribe(e =>
+            {
+                var dialog = new SettingWindow();
+                dialog.ShowDialog();
+            });
             SettingResetCommand.Subscribe(async e =>
             {
                 var metroDialogSettings = new MetroDialogSettings()
@@ -434,20 +440,27 @@ namespace MHRiseModManager.ViewModels
 
                 ModFileListReflesh();
             });
-            ShownCommand.Subscribe(async e =>
+            ShownCommand.Subscribe(e =>
             {
-                var checkList = await CheckListAsync();
 
-                if (checkList.Count > 0)
-                {
-                    await MahAppsDialogCoordinator.ShowMessageAsync(this, Assembly.GetEntryAssembly().GetName().Name, $"以下の新しいバージョンのModが公開されています。\n {string.Join("\n", checkList.Select(x => $"{x.Item1} ({x.Item2}) → ({x.Item3})"))}" );
-                }
+            });
+            VersionCheckCommand.Subscribe(async e =>
+            {
+                await CheckVersion();
             });
             MenuCloseCommand.Subscribe(x => ((Window)x).Close());
 
             ModFileListReflesh();
         }
+        private async Task CheckVersion()
+        {
+            var checkList = await CheckListAsync();
 
+            if (checkList.Count > 0)
+            {
+                await MahAppsDialogCoordinator.ShowMessageAsync(this, Assembly.GetEntryAssembly().GetName().Name, $"以下の新しいバージョンのModが公開されています。\n {string.Join("\n", checkList.Select(x => $"{x.Item1} ({x.Item2}) → ({x.Item3})"))}");
+            }
+        }
         private async Task<List<Tuple<string, string, string>>> CheckListAsync()
         {
             var controller = await MahAppsDialogCoordinator.ShowProgressAsync(this, Assembly.GetEntryAssembly().GetName().Name, "Modバージョンチェック中...");
@@ -455,7 +468,7 @@ namespace MHRiseModManager.ViewModels
             var checkList = new List<Tuple<string, string, string>>();
             var list = _ModListManager.SelectAll();
 
-            int i = 1;
+            var i = 1;
             controller.Minimum = i;
             controller.Maximum = list.Count;
 

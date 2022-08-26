@@ -74,7 +74,7 @@ namespace MHRiseModManager.ViewModels
                 }
             });
 
-            SelectionChanged.Subscribe(async x =>
+            SelectionChanged.Subscribe(x =>
             {
                 var datagrid = (DataGrid)x.sender;
 
@@ -454,14 +454,14 @@ namespace MHRiseModManager.ViewModels
         }
         private async Task CheckVersion()
         {
-            var checkList = await CheckListAsync();
+            var checkList = await VersionCheckListAsync();
 
             if (checkList.Count > 0)
             {
                 await MahAppsDialogCoordinator.ShowMessageAsync(this, Assembly.GetEntryAssembly().GetName().Name, $"以下の新しいバージョンのModが公開されています。\n {string.Join("\n", checkList.Select(x => $"{x.Item1} ({x.Item2}) → ({x.Item3})"))}");
             }
         }
-        private async Task<List<Tuple<string, string, string>>> CheckListAsync()
+        private async Task<List<Tuple<string, string, string>>> VersionCheckListAsync()
         {
             var controller = await MahAppsDialogCoordinator.ShowProgressAsync(this, Assembly.GetEntryAssembly().GetName().Name, "Modバージョンチェック中...");
 
@@ -472,20 +472,12 @@ namespace MHRiseModManager.ViewModels
             controller.Minimum = i;
             controller.Maximum = list.Count;
 
-            var reg = new Regex("<meta property=\"twitter:data1\" content=\"(.+)\" />");
 
             foreach (var modInfo in list)
             {
-                var path = Utility.GetOrCreateDirectory(Path.Combine(Environment.CurrentDirectory, Settings.Default.WebCache));
-                var filePath = Path.Combine(path, $"{modInfo.Id}.html");
+                var version = await GetVersion(modInfo.URL);
 
-                await downloadFileAsync(modInfo.URL, filePath);
-
-                var versions = await FileEx.ReadAllLinesAsync(filePath, Encoding.GetEncoding("utf-8"));
-                    
-                var version = versions.Select(x => reg.Match(x)).Where(x => x.Success).Select(x => x.Groups[1].Value).FirstOrDefault();
-
-                if (!string.IsNullOrEmpty(version) && !modInfo.Version.Equals(version))
+                if (!string.IsNullOrEmpty(version) && string.Compare(version, modInfo.Version) > 0)
                 {
                     checkList.Add(Tuple.Create(modInfo.ModName, modInfo.Version, version));
                 }
@@ -500,19 +492,29 @@ namespace MHRiseModManager.ViewModels
             return checkList;
         }
 
-        private async Task downloadFileAsync(string uri, string outputPath)
+        private async Task<string> GetVersion(string url)
         {
+            var list = new List<string>();
             var client = new HttpClient();
-            HttpResponseMessage res = await client.GetAsync(uri, HttpCompletionOption.ResponseHeadersRead);
+            var res = await client.GetAsync(url, HttpCompletionOption.ResponseHeadersRead);
 
-            using (var fileStream = File.Create(outputPath))
+            using (var httpStream = await res.Content.ReadAsStreamAsync())
             {
-                using (var httpStream = await res.Content.ReadAsStreamAsync())
+                var parser = new AngleSharp.Html.Parser.HtmlParser();
+                var doc = parser.ParseDocument(httpStream);
+
+                var h2Nodes = doc.QuerySelectorAll("div.titlestat");
+
+                foreach (var h2Node in h2Nodes)
                 {
-                    httpStream.CopyTo(fileStream);
-                    fileStream.Flush();
+                    if (h2Node.TextContent == "Version")
+                    {
+                        list.Add(h2Node.NextElementSibling.TextContent.Replace("\r", "").Replace("\n", "").Replace(" ", ""));
+                    }
                 }
             }
+
+            return list.Any() ? list.Max() : string.Empty;
         }
 
         private void Delete(ModInfo modinfo)

@@ -22,6 +22,7 @@ using CsvHelper.Configuration;
 using System.Net;
 using System.Text.RegularExpressions;
 using System.Net.Http;
+using ControlzEx.Theming;
 
 namespace MHRiseModManager.ViewModels
 {
@@ -65,6 +66,9 @@ namespace MHRiseModManager.ViewModels
         public ReactiveCommand VersionCheckCommand { get; } = new ReactiveCommand();
         public MainViewModel()
         {
+            ThemeManager.Current.ChangeThemeBaseColor(Application.Current, Settings.Default.BaseColor);
+            ThemeManager.Current.ChangeThemeColorScheme(Application.Current, Settings.Default.ColorScheme);
+
             FileDropCommand = new ReactiveCommand<DragEventArgs>().AddTo(Disposable);
             FileDropCommand.Subscribe(e =>
             {

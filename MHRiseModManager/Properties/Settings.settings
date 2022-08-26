@@ -26,5 +26,11 @@
     <Setting Name="StartUpVersionCheck" Type="System.Boolean" Scope="User">
       <Value Profile="(Default)">False</Value>
     </Setting>
+    <Setting Name="BaseColor" Type="System.String" Scope="User">
+      <Value Profile="(Default)">Light</Value>
+    </Setting>
+    <Setting Name="ColorScheme" Type="System.String" Scope="User">
+      <Value Profile="(Default)">Blue</Value>
+    </Setting>
   </Settings>
 </SettingsFile>

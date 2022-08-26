@@ -118,5 +118,29 @@ namespace MHRiseModManager.Properties {
                 this["StartUpVersionCheck"] = value;
             }
         }
+        
+        [global::System.Configuration.UserScopedSettingAttribute()]
+        [global::System.Diagnostics.DebuggerNonUserCodeAttribute()]
+        [global::System.Configuration.DefaultSettingValueAttribute("Light")]
+        public string BaseColor {
+            get {
+                return ((string)(this["BaseColor"]));
+            }
+            set {
+                this["BaseColor"] = value;
+            }
+        }
+        
+        [global::System.Configuration.UserScopedSettingAttribute()]
+        [global::System.Diagnostics.DebuggerNonUserCodeAttribute()]
+        [global::System.Configuration.DefaultSettingValueAttribute("Blue")]
+        public string ColorScheme {
+            get {
+                return ((string)(this["ColorScheme"]));
+            }
+            set {
+                this["ColorScheme"] = value;
+            }
+        }
     }
 }

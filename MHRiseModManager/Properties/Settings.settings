@@ -23,8 +23,8 @@
     <Setting Name="ResourceDirectoryName" Type="System.String" Scope="User">
       <Value Profile="(Default)">Resource</Value>
     </Setting>
-    <Setting Name="WebCache" Type="System.String" Scope="User">
-      <Value Profile="(Default)">WebCache</Value>
+    <Setting Name="StartUpVersionCheck" Type="System.Boolean" Scope="User">
+      <Value Profile="(Default)">False</Value>
     </Setting>
   </Settings>
 </SettingsFile>

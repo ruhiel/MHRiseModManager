@@ -109,13 +109,13 @@ namespace MHRiseModManager.Properties {
         
         [global::System.Configuration.UserScopedSettingAttribute()]
         [global::System.Diagnostics.DebuggerNonUserCodeAttribute()]
-        [global::System.Configuration.DefaultSettingValueAttribute("WebCache")]
-        public string WebCache {
+        [global::System.Configuration.DefaultSettingValueAttribute("False")]
+        public bool StartUpVersionCheck {
             get {
-                return ((string)(this["WebCache"]));
+                return ((bool)(this["StartUpVersionCheck"]));
             }
             set {
-                this["WebCache"] = value;
+                this["StartUpVersionCheck"] = value;
             }
         }
     }

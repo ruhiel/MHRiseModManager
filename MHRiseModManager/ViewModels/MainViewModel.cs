@@ -61,7 +61,7 @@ namespace MHRiseModManager.ViewModels
         public ReactiveCommand AllUnInstallCommand { get; } = new ReactiveCommand();
         public ReactiveCommand MenuCloseCommand { get; } = new ReactiveCommand();
         public ReactiveCommand SettingCommand { get; } = new ReactiveCommand();
-        public AsyncReactiveCommand SettingResetCommand { get; } = new AsyncReactiveCommand();
+
         public ReactiveCommand VersionCheckCommand { get; } = new ReactiveCommand();
         public MainViewModel()
         {
@@ -239,37 +239,6 @@ namespace MHRiseModManager.ViewModels
                 var dialog = new SettingWindow();
                 dialog.ShowDialog();
             });
-            SettingResetCommand.Subscribe(async e =>
-            {
-                var metroDialogSettings = new MetroDialogSettings()
-                {
-                    AffirmativeButtonText = "はい",
-                    NegativeButtonText = "いいえ",
-                    AnimateHide = true,
-                    AnimateShow = true,
-                    ColorScheme = MetroDialogColorScheme.Theme,
-                };
-
-                var diagResult = await MahAppsDialogCoordinator.ShowMessageAsync(this, Assembly.GetEntryAssembly().GetName().Name, "設定の初期化は全てのModのアンインストール後をおすすめします。\r\nよろしいですか？", MessageDialogStyle.AffirmativeAndNegative, metroDialogSettings);
-
-                if (MessageDialogResult.Negative == diagResult)
-                {
-                    return;
-                }
-
-                Utility.FileSafeDelete(Path.Combine(Environment.CurrentDirectory, Settings.Default.DataBaseFileName));
-
-                Utility.CleanDirectory(Path.Combine(Environment.CurrentDirectory, Settings.Default.ModsCacheDirectoryName));
-
-                Utility.CleanDirectory(Path.Combine(Environment.CurrentDirectory, Settings.Default.ImageCacheDirectoryName));
-
-                Utility.CleanDirectory(Path.Combine(Path.GetTempPath(), Settings.Default.TempDirectoryName));
-
-                await MahAppsDialogCoordinator.ShowMessageAsync(this, Assembly.GetEntryAssembly().GetName().Name, "設定を初期化しました。アプリケーションを再起動します。");
-
-                Application.Current.Shutdown();
-                System.Windows.Forms.Application.Restart();
-            });
 
             DeleteCommand.Subscribe(async e =>
             {
@@ -440,9 +409,12 @@ namespace MHRiseModManager.ViewModels
 
                 ModFileListReflesh();
             });
-            ShownCommand.Subscribe(e =>
+            ShownCommand.Subscribe(async e =>
             {
-
+                if(Settings.Default.StartUpVersionCheck)
+                {
+                    await CheckVersion();
+                }
             });
             VersionCheckCommand.Subscribe(async e =>
             {
@@ -536,9 +508,6 @@ namespace MHRiseModManager.ViewModels
 
             Utility.CleanDirectory(cacheDir);
 
-            var webCachepath = Utility.GetOrCreateDirectory(Path.Combine(Environment.CurrentDirectory, Settings.Default.WebCache));
-
-            Utility.CleanDirectory(webCachepath);
         }
 
         private async void OnFileDrop(DragEventArgs e)

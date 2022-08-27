@@ -51,6 +51,7 @@
                 <MenuItem Header="終了" Command="{Binding MenuCloseCommand}"  CommandParameter="{Binding RelativeSource={RelativeSource Mode=FindAncestor, AncestorType=Window}}"/>
             </MenuItem>
             <MenuItem Header="Mod(_M)">
+                <MenuItem Header="CSVテンプレート出力" Command="{Binding CSVTemplateOutPutCommand}"/>
                 <MenuItem Header="CSVインポート" Command="{Binding CSVImportCommand}"/>
                 <MenuItem Header="一括インストール" Command="{Binding AllInstallCommand}"/>
                 <MenuItem Header="一括アンインストール" Command="{Binding AllUnInstallCommand}"/>

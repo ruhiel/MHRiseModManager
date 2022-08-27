@@ -55,6 +55,7 @@ namespace MHRiseModManager.ViewModels
         public AsyncReactiveCommand DeleteCommand { get; } = new AsyncReactiveCommand();
         public AsyncReactiveCommand BackUpCommand { get; } = new AsyncReactiveCommand();
         public AsyncReactiveCommand RestoreCommand { get; } = new AsyncReactiveCommand();
+        public ReactiveCommand CSVTemplateOutPutCommand { get; } = new ReactiveCommand();
         public ReactiveCommand CSVImportCommand { get; } = new ReactiveCommand();
         public ReactiveCommand CSVExportCommand { get; } = new ReactiveCommand();
         public ReactiveCommand AllClearCommand { get; } = new ReactiveCommand();
@@ -268,7 +269,27 @@ namespace MHRiseModManager.ViewModels
 
                 ModFileListReflesh();
             });
+            CSVTemplateOutPutCommand.Subscribe(e =>
+            {
+                var filePath = Path.Combine(Path.GetTempPath(), Path.ChangeExtension(Path.GetRandomFileName(), "csv"));
 
+                var config = new CsvConfiguration(new CultureInfo("ja-JP", false))
+                {
+                    HasHeaderRecord = true,
+                    Encoding = Encoding.GetEncoding("Shift_JIS")
+                };
+
+                var records = new List<ImportCsv>();
+                using (var writer = new StreamWriter(filePath, false, Encoding.GetEncoding("Shift_JIS")))
+                {
+                    using (var csv = new CsvWriter(writer, config))
+                    {
+                        csv.WriteRecords(records);
+                    }
+                }
+
+                System.Diagnostics.Process.Start(filePath);
+            });
             CSVImportCommand.Subscribe(async e =>
             {
                 var dropFile = string.Empty;

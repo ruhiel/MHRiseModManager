@@ -23,6 +23,7 @@ using System.Net;
 using System.Text.RegularExpressions;
 using System.Net.Http;
 using ControlzEx.Theming;
+using System.Threading;
 
 namespace MHRiseModManager.ViewModels
 {
@@ -155,7 +156,7 @@ namespace MHRiseModManager.ViewModels
 
             SelectGameFolderCommand.Subscribe(e =>
             {
-                using (var ofd = new System.Windows.Forms.OpenFileDialog() { FileName = "SelectFolder", Filter = "Folder|.", CheckFileExists = false })
+                using (var ofd = new System.Windows.Forms.OpenFileDialog() { FileName = "MonsterHunterRise.exe", Filter = "Folder|*.exe", CheckFileExists = false })
                 {
                     if (ofd.ShowDialog() == System.Windows.Forms.DialogResult.OK)
                     {
@@ -304,53 +305,8 @@ namespace MHRiseModManager.ViewModels
                     dropFile = ofd.FileName;
                 }
 
-                var config = new CsvConfiguration(new CultureInfo("ja-JP", false))
-                {
-                    HasHeaderRecord = true,
-                    Encoding = Encoding.GetEncoding("Shift_JIS")
-                };
+                await CsvImportProc(dropFile);
 
-                List<ImportCsv> records = null;
-                using (var reader = new StreamReader(dropFile, Encoding.GetEncoding("Shift_JIS")))
-                {
-                    using (var csv = new CsvReader(reader, config))
-                    {
-                        records = csv.GetRecords<ImportCsv>().ToList();
-                    }
-                }
-
-                var noexists = records.Where(x => !File.Exists(x.FullFilePath)).Select(x => x.FullFilePath).OrderBy(x => x);
-
-                if (noexists.Any())
-                {
-                    await MahAppsDialogCoordinator.ShowMessageAsync(this, Assembly.GetEntryAssembly().GetName().Name, "存在しないファイルが含まれています。処理を終了します。\n" + string.Join("\n", noexists));
-
-                    return;
-                }
-
-                var duplicate = Utility.FindDuplication(records.Select(x => x.FullFilePath)).OrderBy(x => x);
-
-                if (duplicate.Any())
-                {
-                    await MahAppsDialogCoordinator.ShowMessageAsync(this, Assembly.GetEntryAssembly().GetName().Name, "重複したファイルが含まれています。処理を終了します。\n" + string.Join("\n", duplicate));
-
-                    return;
-                }
-
-                var controller = await MahAppsDialogCoordinator.ShowProgressAsync(this, Assembly.GetEntryAssembly().GetName().Name, "Modの新規登録中...");
-
-                foreach (var record in records)
-                {
-                    await ModRegist(modName:record.Name, url:record.Url, memo:record.Memo, version:record.Version, dropFile:record.FullFilePath);
-                }
-
-                Utility.CleanDirectory(Path.Combine(Path.GetTempPath(), Settings.Default.TempDirectoryName));
-
-                ModFileListReflesh();
-
-                await controller.CloseAsync();
-
-                await MahAppsDialogCoordinator.ShowMessageAsync(this, Assembly.GetEntryAssembly().GetName().Name, "Modを新規登録しました。");
             });
 
             CSVExportCommand.Subscribe(e =>
@@ -436,7 +392,7 @@ namespace MHRiseModManager.ViewModels
             });
             ShownCommand.Subscribe(async e =>
             {
-                if(Settings.Default.StartUpVersionCheck)
+                if (Settings.Default.StartUpVersionCheck)
                 {
                     await CheckVersion();
                 }
@@ -449,6 +405,86 @@ namespace MHRiseModManager.ViewModels
 
             ModFileListReflesh();
         }
+        private async Task CsvImportProc(string dropFile)
+        {
+            var records = await GetCSVRecord(dropFile);
+            if (records == null)
+            {
+                return;
+            }
+            var controller = await MahAppsDialogCoordinator.ShowProgressAsync(this, Assembly.GetEntryAssembly().GetName().Name, "Modの新規登録中...");
+
+            var i = 1;
+            controller.Minimum = i;
+            controller.Maximum = records.Count;
+
+            await Task.Run(() =>
+            {
+                foreach (var record in records)
+                {
+                    ModRegistSync(modName: record.Name, url: record.Url, memo: record.Memo, version: record.Version, dropFile: record.FullFilePath);
+                    controller.SetProgress(i);
+                    var rate = 100 * i / records.Count;
+                    controller.SetMessage($"Modの新規登録中 {i} / {records.Count} ({rate}%)...");
+                    i++;
+                }
+
+                Utility.CleanDirectory(Path.Combine(Path.GetTempPath(), Settings.Default.TempDirectoryName));
+            });
+
+            ModFileListReflesh();
+
+            await controller.CloseAsync();
+
+            await MahAppsDialogCoordinator.ShowMessageAsync(this, Assembly.GetEntryAssembly().GetName().Name, "Modを新規登録しました。");
+        }
+
+        private async Task<List<ImportCsv>> GetCSVRecord(string dropFile)
+        {
+            List<ImportCsv> records = null;
+            var config = new CsvConfiguration(new CultureInfo("ja-JP", false))
+            {
+                HasHeaderRecord = true,
+                Encoding = Encoding.GetEncoding("Shift_JIS")
+            };
+            try
+            {
+                using (var reader = new StreamReader(dropFile, Encoding.GetEncoding("Shift_JIS")))
+                {
+                    using (var csv = new CsvReader(reader, config))
+                    {
+                        records = csv.GetRecords<ImportCsv>().ToList();
+                    }
+                }
+            }
+            catch (Exception ex)
+            {
+                await MahAppsDialogCoordinator.ShowMessageAsync(this, Assembly.GetEntryAssembly().GetName().Name, ex.Message + "\n処理を終了します。");
+
+                return null;
+            }
+
+            var noexists = records.Where(x => !File.Exists(x.FullFilePath)).Select(x => x.FullFilePath).OrderBy(x => x);
+
+            if (noexists.Any())
+            {
+                await MahAppsDialogCoordinator.ShowMessageAsync(this, Assembly.GetEntryAssembly().GetName().Name, "存在しないファイルが含まれています。処理を終了します。\n" + string.Join("\n", noexists));
+
+                return null;
+            }
+
+            var duplicate = Utility.FindDuplication(records.Select(x => x.FullFilePath)).OrderBy(x => x);
+
+            if (duplicate.Any())
+            {
+                await MahAppsDialogCoordinator.ShowMessageAsync(this, Assembly.GetEntryAssembly().GetName().Name, "重複したファイルが含まれています。処理を終了します。\n" + string.Join("\n", duplicate));
+
+                return null;
+            }
+
+            return records;
+        }
+
         private async Task CheckVersion()
         {
             var checkList = await VersionCheckListAsync();
@@ -563,7 +599,7 @@ namespace MHRiseModManager.ViewModels
 
                 var modName = string.IsNullOrEmpty(returnModel.Name.Value) ? null : returnModel.Name.Value;
 
-                await ModRegist(modName:modName, url:returnModel.URL.Value, memo:returnModel.Memo.Value, version:returnModel.Version.Value, dropFile:dropFile);
+                await ModRegist(modName: modName, url: returnModel.URL.Value, memo: returnModel.Memo.Value, version: returnModel.Version.Value, dropFile: dropFile);
 
                 Utility.CleanDirectory(Path.Combine(Path.GetTempPath(), Settings.Default.TempDirectoryName));
 
@@ -577,6 +613,24 @@ namespace MHRiseModManager.ViewModels
             {
                 MessageBox.Show(ex.ToString());
             }
+        }
+        private void ModRegistSync(string modName, string url, string memo, string version, string dropFile)
+        {
+            dropFile = PreProcess(dropFile);
+
+            if (dropFile == null)
+            {
+                return;
+            }
+
+            var cacheDir = Utility.GetOrCreateDirectory(Path.Combine(Environment.CurrentDirectory, Settings.Default.ModsCacheDirectoryName));
+
+            var targetFileName = Path.GetFileName(dropFile);
+            var targetFile = Path.Combine(cacheDir, targetFileName);
+
+            File.Copy(dropFile, targetFile, true);
+
+            _ModListManager.Insert(name: targetFileName, targetFile: targetFile, url: url, memo: memo, modName: modName, version: version);
         }
 
         private async Task ModRegist(string modName, string url, string memo, string version, string dropFile)
@@ -609,7 +663,7 @@ namespace MHRiseModManager.ViewModels
             var targetFile = Path.Combine(tempDir, Path.GetFileName(dropFile));
             File.Copy(dropFile, targetFile, true);
 
-            var mod = new ModInfo(id: 1, name: "", status: Status.未インストール, fileSize: new FileInfo(targetFile).Length, dateCreated: DateTime.Now, category: Category.Lua, archiveFilePath: targetFile, modFileBinary:null, url: "", memo: "");
+            var mod = new ModInfo(id: 1, name: "", status: Status.未インストール, fileSize: new FileInfo(targetFile).Length, dateCreated: DateTime.Now, category: Category.Lua, archiveFilePath: targetFile, modFileBinary: null, url: "", memo: "");
 
             if (mod.GetNewCategory() == Category.Lua && !mod.GetFileTree().Any(x => !x.IsFile && x.Name == "reframework"))
             {
@@ -658,7 +712,7 @@ namespace MHRiseModManager.ViewModels
 
             _ModListManager.SelectAll().ForEach(x =>
             {
-                ModInfoList.Add(new ModInfo(id: x.Id, name: x.Name, status: x.Status, fileSize: x.FileSize, dateCreated: x.DateCreated, category: x.Category, archiveFilePath: x.ArchiveFilePath, url: x.URL, imageFilePath: x.ImageFilePath, memo: x.Memo, modName: x.ModName, modFileBinary:x.ModFileBinary, version:x.Version, mainViewModel: this));
+                ModInfoList.Add(new ModInfo(id: x.Id, name: x.Name, status: x.Status, fileSize: x.FileSize, dateCreated: x.DateCreated, category: x.Category, archiveFilePath: x.ArchiveFilePath, url: x.URL, imageFilePath: x.ImageFilePath, memo: x.Memo, modName: x.ModName, modFileBinary: x.ModFileBinary, version: x.Version, mainViewModel: this));
             });
 
             NowModPath.Value = string.Empty;
@@ -783,7 +837,7 @@ namespace MHRiseModManager.ViewModels
 
                 var targetFileName = Path.GetFileName(dropFile);
                 var targetFile = Path.Combine(cacheDir, targetFileName);
-                
+
                 File.Copy(dropFile, targetFile, true);
 
                 newModInfo = _ModListManager.Update(id: modInfo.Id, targetFile: targetFile);

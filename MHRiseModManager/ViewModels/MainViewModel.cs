@@ -349,10 +349,25 @@ namespace MHRiseModManager.ViewModels
                     return;
                 }
 
-                foreach (var modInfo in _ModListManager.SelectAll().Where(x => x.Status == Status.未インストール))
+                var records = _ModListManager.SelectAll().Where(x => x.Status == Status.未インストール).ToList();
+                var controller = await MahAppsDialogCoordinator.ShowProgressAsync(this, Assembly.GetEntryAssembly().GetName().Name, "Modの一括削除中...");
+                var i = 1;
+                controller.Minimum = i;
+                controller.Maximum = records.Count;
+
+                await Task.Run(() =>
                 {
-                    Delete(modInfo);
-                }
+                    foreach (var modInfo in records)
+                    {
+                        Delete(modInfo);
+                        controller.SetProgress(i);
+                        var rate = 100 * i / records.Count;
+                        controller.SetMessage($"Modの一括削除中 {i} / {records.Count} ({rate}%)...");
+                        i++;
+                    }
+                });
+
+                await controller.CloseAsync();
 
                 await MahAppsDialogCoordinator.ShowMessageAsync(this, Assembly.GetEntryAssembly().GetName().Name, "Modの登録を削除しました。");
 
@@ -361,12 +376,23 @@ namespace MHRiseModManager.ViewModels
 
             AllInstallCommand.Subscribe(async e =>
             {
+                var records = _ModListManager.SelectAll().Where(x => x.Status == Status.未インストール).ToList();
                 var controller = await MahAppsDialogCoordinator.ShowProgressAsync(this, Assembly.GetEntryAssembly().GetName().Name, "Modの一括インストール中...");
+                var i = 1;
+                controller.Minimum = i;
+                controller.Maximum = records.Count;
 
-                foreach (var modInfo in _ModListManager.SelectAll().Where(x => x.Status == Status.未インストール))
+                await Task.Run(() =>
                 {
-                    Install(modInfo);
-                }
+                    foreach (var modInfo in records)
+                    {
+                        Install(modInfo);
+                        controller.SetProgress(i);
+                        var rate = 100 * i / records.Count;
+                        controller.SetMessage($"Modの一括インストール中 {i} / {records.Count} ({rate}%)...");
+                        i++;
+                    }
+                });
 
                 await controller.CloseAsync();
 
@@ -377,12 +403,23 @@ namespace MHRiseModManager.ViewModels
 
             AllUnInstallCommand.Subscribe(async e =>
             {
+                var records = _ModListManager.SelectAll().Where(x => x.Status == Status.インストール済).ToList();
                 var controller = await MahAppsDialogCoordinator.ShowProgressAsync(this, Assembly.GetEntryAssembly().GetName().Name, "Modの一括アンインストール中...");
+                var i = 1;
+                controller.Minimum = i;
+                controller.Maximum = records.Count;
 
-                foreach (var modInfo in _ModListManager.SelectAll().Where(x => x.Status == Status.インストール済))
+                await Task.Run(() =>
                 {
-                    Uninstall(modInfo);
-                }
+                    foreach (var modInfo in records)
+                    {
+                        Uninstall(modInfo);
+                        controller.SetProgress(i);
+                        var rate = 100 * i / records.Count;
+                        controller.SetMessage($"Modの一括アンインストール中 {i} / {records.Count} ({rate}%)...");
+                        i++;
+                    }
+                });
 
                 await controller.CloseAsync();
 

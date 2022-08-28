@@ -55,7 +55,7 @@
                 <MenuItem Header="CSVインポート" Command="{Binding CSVImportCommand}"/>
                 <MenuItem Header="一括インストール" Command="{Binding AllInstallCommand}"/>
                 <MenuItem Header="一括アンインストール" Command="{Binding AllUnInstallCommand}"/>
-                <MenuItem Header="一括登録解除" Command="{Binding AllClearCommand}"/>
+                <MenuItem Header="一括登録削除" Command="{Binding AllClearCommand}"/>
                 <MenuItem Header="CSVエクスポート" Command="{Binding CSVExportCommand}"/>
                 <MenuItem Header="バージョンチェック" Command="{Binding VersionCheckCommand}"/>
             </MenuItem>

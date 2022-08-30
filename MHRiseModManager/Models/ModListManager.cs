@@ -34,6 +34,7 @@ namespace MHRiseModManager.Models
                         "memo TEXT," +
                         "modname TEXT," +
                         "version TEXT," +
+                        "latestversion TEXT," +
                         "modfilebinary BLOB)";
 
                         command.ExecuteNonQuery();
@@ -216,6 +217,22 @@ namespace MHRiseModManager.Models
             {
                 con.Open();
                 string sql = $"update modinfo set modname = '{name}', url = '{url}', memo = '{memo}', version = '{version}' where id = {id}";
+                var com = new SQLiteCommand(sql, con);
+                com.ExecuteNonQuery();
+
+                con.Close();
+            }
+
+            return SelectAll().Where(x => x.Id == id).First();
+        }
+
+        public ModInfo UpdateLatestVersion(int id, string latestversion)
+        {
+            // コネクションを開いてテーブル作成して閉じる  
+            using (var con = new SQLiteConnection($"Data Source={Settings.Default.DataBaseFileName}"))
+            {
+                con.Open();
+                string sql = $"update modinfo set latestversion = '{latestversion}' where id = {id}";
                 var com = new SQLiteCommand(sql, con);
                 com.ExecuteNonQuery();
 

@@ -49,6 +49,7 @@ namespace MHRiseModManager.ViewModels
         public ObservableCollection<ModInfo> ModInfoList { get; set; } = new ObservableCollection<ModInfo>();
         public ReactiveProperty<string> NowModURL { get; } = new ReactiveProperty<string>();
         public ReactiveProperty<string> NowVersion { get; } = new ReactiveProperty<string>();
+        public ReactiveProperty<string> NowLatestVersion { get; } = new ReactiveProperty<string>();
         public ReactiveCommand<object> NavigateCommand { get; } = new ReactiveCommand<Object>();
         public ReactiveCommand<object> SelectGameFolderCommand { get; } = new ReactiveCommand<Object>();
         public ReactiveCommand<object> OpenGameFolderCommand { get; } = new ReactiveCommand<Object>();
@@ -103,6 +104,8 @@ namespace MHRiseModManager.ViewModels
                     NowModURL.Value = modInfo.URL;
 
                     NowVersion.Value = modInfo.Version;
+
+                    NowLatestVersion.Value = modInfo.LatestVersion;
 
                     if (string.IsNullOrEmpty(modInfo.ImageFilePath))
                     {
@@ -437,6 +440,7 @@ namespace MHRiseModManager.ViewModels
             VersionCheckCommand.Subscribe(async e =>
             {
                 await CheckVersion();
+                ModFileListReflesh();
             });
             MenuCloseCommand.Subscribe(x => ((Window)x).Close());
 
@@ -546,6 +550,8 @@ namespace MHRiseModManager.ViewModels
             foreach (var modInfo in list)
             {
                 var version = await GetVersion(modInfo.URL);
+
+                _ModListManager.UpdateLatestVersion(modInfo.Id, version);
 
                 if (!string.IsNullOrEmpty(version) && string.Compare(version, modInfo.Version) > 0)
                 {
@@ -749,7 +755,7 @@ namespace MHRiseModManager.ViewModels
 
             _ModListManager.SelectAll().ForEach(x =>
             {
-                ModInfoList.Add(new ModInfo(id: x.Id, name: x.Name, status: x.Status, fileSize: x.FileSize, dateCreated: x.DateCreated, category: x.Category, archiveFilePath: x.ArchiveFilePath, url: x.URL, imageFilePath: x.ImageFilePath, memo: x.Memo, modName: x.ModName, modFileBinary: x.ModFileBinary, version: x.Version, mainViewModel: this));
+                ModInfoList.Add(new ModInfo(id: x.Id, name: x.Name, status: x.Status, fileSize: x.FileSize, dateCreated: x.DateCreated, category: x.Category, archiveFilePath: x.ArchiveFilePath, url: x.URL, imageFilePath: x.ImageFilePath, memo: x.Memo, modName: x.ModName, modFileBinary: x.ModFileBinary, version: x.Version, latestversion:x.LatestVersion, mainViewModel: this));
             });
 
             NowModPath.Value = string.Empty;
@@ -767,6 +773,8 @@ namespace MHRiseModManager.ViewModels
             NowModURL.Value = string.Empty;
 
             NowVersion.Value = string.Empty;
+
+            NowLatestVersion.Value = string.Empty;
 
             ModFileTree.Clear();
         }

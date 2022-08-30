@@ -99,6 +99,13 @@ namespace MHRiseModManager.Models
             get => _Version;
             set => SetProperty(ref _Version, value);
         }
+        [Column(Name = "latestversion", CanBeNull = true, DbType = "TEXT")]
+        private string _LatestVersion;
+        public string LatestVersion
+        {
+            get => _LatestVersion;
+            set => SetProperty(ref _LatestVersion, value);
+        }
         [Column(Name = "modfilebinary", CanBeNull = true)]
         private byte[] _ModFileBinary;
         public byte[] ModFileBinary
@@ -162,7 +169,7 @@ namespace MHRiseModManager.Models
 
         private MainViewModel _MainViewModel;
 
-        public ModInfo(int id, string name, Status status, long fileSize, DateTime dateCreated, Category category, string archiveFilePath, string url, string memo, string version = null, string modName = null, string imageFilePath = null, byte[] modFileBinary = null, MainViewModel mainViewModel = null)
+        public ModInfo(int id, string name, Status status, long fileSize, DateTime dateCreated, Category category, string archiveFilePath, string url, string memo, string version = null, string latestversion = null, string modName = null, string imageFilePath = null, byte[] modFileBinary = null, MainViewModel mainViewModel = null)
         {
             Id = id;
             Name = name;
@@ -177,6 +184,7 @@ namespace MHRiseModManager.Models
             ModName = modName;
             ModFileBinary = modFileBinary;
             Version = version;
+            LatestVersion = latestversion;
             _MainViewModel = mainViewModel;
 
             ModUpdateCommand.Subscribe(_ =>

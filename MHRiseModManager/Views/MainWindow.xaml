@@ -45,9 +45,10 @@
         </Grid.RowDefinitions>
         <Menu  Grid.Row="0" DockPanel.Dock="Top">
             <MenuItem Header="ファイル(_F)">
+                <!--
                 <MenuItem Header="バックアップ" Command="{Binding BackUpCommand}"/>
                 <MenuItem Header="リストア" Command="{Binding RestoreCommand}"/>
-
+                -->
                 <MenuItem Header="終了" Command="{Binding MenuCloseCommand}"  CommandParameter="{Binding RelativeSource={RelativeSource Mode=FindAncestor, AncestorType=Window}}"/>
             </MenuItem>
             <MenuItem Header="Mod(_M)">

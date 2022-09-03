@@ -65,6 +65,8 @@ namespace MHRiseModManager.Utils
 
         public static void CleanDirectory(string path)
         {
+            if (!Directory.Exists(path)) return;
+
             var di = new DirectoryInfo(path);
             foreach (var f in di.GetFiles())
             {
@@ -79,6 +81,8 @@ namespace MHRiseModManager.Utils
 
         public static void CleanDirectoryOnlyDirectory(string path)
         {
+            if (!Directory.Exists(path)) return;
+
             var di = new DirectoryInfo(path);
 
             foreach (var d in di.GetDirectories())

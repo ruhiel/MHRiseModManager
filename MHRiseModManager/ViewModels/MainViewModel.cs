@@ -164,6 +164,7 @@ namespace MHRiseModManager.ViewModels
                     if (ofd.ShowDialog() == System.Windows.Forms.DialogResult.OK)
                     {
                         GameDirectoryPath.Value = Path.GetDirectoryName(ofd.FileName);
+                        Settings.Default.Save();
                     }
                 }
             });
@@ -296,6 +297,12 @@ namespace MHRiseModManager.ViewModels
             });
             CSVImportCommand.Subscribe(async e =>
             {
+                if (string.IsNullOrEmpty(GameDirectoryPath.Value))
+                {
+                    await MahAppsDialogCoordinator.ShowMessageAsync(this, Assembly.GetEntryAssembly().GetName().Name, "ゲームフォルダを設定してください。処理を終了します。");
+                    return;
+                }
+
                 var dropFile = string.Empty;
 
                 using (var ofd = new System.Windows.Forms.OpenFileDialog() { FileName = "", Filter = "CSVファイル|*.csv" })
@@ -618,6 +625,12 @@ namespace MHRiseModManager.ViewModels
         {
             try
             {
+                if (string.IsNullOrEmpty(GameDirectoryPath.Value))
+                {
+                    await MahAppsDialogCoordinator.ShowMessageAsync(this, Assembly.GetEntryAssembly().GetName().Name, "ゲームフォルダを設定してください。処理を終了します。");
+                    return;
+                }
+
                 if (!e.Data.GetDataPresent(DataFormats.FileDrop))
                 {
                     return;

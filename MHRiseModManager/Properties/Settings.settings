@@ -1,0 +1,36 @@
+﻿<?xml version='1.0' encoding='utf-8'?>
+<SettingsFile xmlns="http://schemas.microsoft.com/VisualStudio/2004/01/settings" CurrentProfile="(Default)" GeneratedClassNamespace="MHRiseModManager.Properties" GeneratedClassName="Settings">
+  <Profiles />
+  <Settings>
+    <Setting Name="GameDirectoryPath" Type="System.String" Scope="User">
+      <Value Profile="(Default)" />
+    </Setting>
+    <Setting Name="DataBaseFileName" Type="System.String" Scope="User">
+      <Value Profile="(Default)">MHRiseModManager.db</Value>
+    </Setting>
+    <Setting Name="ModsCacheDirectoryName" Type="System.String" Scope="User">
+      <Value Profile="(Default)">ModsCache</Value>
+    </Setting>
+    <Setting Name="TempDirectoryName" Type="System.String" Scope="User">
+      <Value Profile="(Default)">MHRiseModManager</Value>
+    </Setting>
+    <Setting Name="ImageCacheDirectoryName" Type="System.String" Scope="User">
+      <Value Profile="(Default)">ImageCache</Value>
+    </Setting>
+    <Setting Name="BackUpDirectoryName" Type="System.String" Scope="User">
+      <Value Profile="(Default)">BackUpCache</Value>
+    </Setting>
+    <Setting Name="ResourceDirectoryName" Type="System.String" Scope="User">
+      <Value Profile="(Default)">Resource</Value>
+    </Setting>
+    <Setting Name="StartUpVersionCheck" Type="System.Boolean" Scope="User">
+      <Value Profile="(Default)">False</Value>
+    </Setting>
+    <Setting Name="BaseColor" Type="System.String" Scope="User">
+      <Value Profile="(Default)">Light</Value>
+    </Setting>
+    <Setting Name="ColorScheme" Type="System.String" Scope="User">
+      <Value Profile="(Default)">Blue</Value>
+    </Setting>
+  </Settings>
+</SettingsFile>

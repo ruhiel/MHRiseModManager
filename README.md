@@ -56,6 +56,7 @@ Mod名、URL、バージョン、メモの各任意項目を入力し、OKボタ
 nexusmodsの各タブでバージョン情報が異なる場合があり、正しくバージョンチェックできない事があるため、URLはファイルをダウンロードしたタブのページに設定することをおすすめします（?tab=filesで終わるURLです）。
 
 ![インポート3](https://user-images.githubusercontent.com/6840095/188249842-1fee1bfc-2cc5-4a92-8108-9f97fe5ee9db.png)
+
 インポート処理が実行されます。OKボタンクリックします。
 
 ![インポート4](https://user-images.githubusercontent.com/6840095/188249850-b17f6e84-702a-468d-964f-94fdd09d1c25.png)

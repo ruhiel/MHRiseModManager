@@ -869,6 +869,17 @@ namespace MHRiseModManager.ViewModels
                 dropFile = ofd.FileName;
             }
 
+            var dialog = new InstallDialog();
+
+            var returnModel = dialog.DataContext as InstallDialogViewModel;
+
+            returnModel.URL.Value = modInfo.URL;
+            returnModel.Name.Value = modInfo.ModName;
+            returnModel.Memo.Value = modInfo.Memo;
+            returnModel.Version.Value = modInfo.Version;
+
+            dialog.ShowDialog();
+
             // アンインストール
             Uninstall(modInfo);
 
@@ -905,6 +916,8 @@ namespace MHRiseModManager.ViewModels
 
             // インストール
             Install(newModInfo);
+
+            _ModListManager.Update(id: modInfo.Id, name: returnModel.Name.Value, url: returnModel.URL.Value, memo: returnModel.Memo.Value, version: returnModel.Version.Value);
 
             ModFileListReflesh();
         }

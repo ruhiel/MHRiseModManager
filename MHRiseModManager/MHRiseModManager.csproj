@@ -7,11 +7,11 @@
     <UseWPF>true</UseWPF>
     <LangVersion>8.0</LangVersion>
     <NullableContextOptions>enable</NullableContextOptions>
-    <ApplicationIcon>white_fukuzuku.ico</ApplicationIcon>
+    <ApplicationIcon>white_fukuzuku6.ico</ApplicationIcon>
   </PropertyGroup>
 
   <ItemGroup>
-    <Content Include="white_fukuzuku.ico" />
+    <Content Include="white_fukuzuku6.ico" />
   </ItemGroup>
 
   <ItemGroup>

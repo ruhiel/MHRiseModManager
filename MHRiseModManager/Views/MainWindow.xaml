@@ -17,7 +17,8 @@
         xmlns:Dialog="clr-namespace:MahApps.Metro.Controls.Dialogs;assembly=MahApps.Metro"
         Dialog:DialogParticipation.Register="{Binding}"
         Height="800"
-        Width="1600">
+        Width="1600"
+        SaveWindowPosition="True">
     <mah:MetroWindow.DataContext>
         <vm:MainViewModel>
             <vm:MainViewModel.MahAppsDialogCoordinator>

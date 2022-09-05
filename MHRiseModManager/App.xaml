@@ -4,7 +4,9 @@
              xmlns:local="clr-namespace:MHRiseModManager"
              xmlns:Controls="http://metro.mahapps.com/winfx/xaml/controls"
              StartupUri="Views/MainWindow.xaml"
-             xmlns:mah="clr-namespace:MahApps.Metro.Controls;assembly=MahApps.Metro">
+             xmlns:mah="clr-namespace:MahApps.Metro.Controls;assembly=MahApps.Metro"
+             Startup="Application_Startup"
+             Exit="Application_Exit">
     <Application.Resources>
         <ResourceDictionary>
             <ResourceDictionary.MergedDictionaries>

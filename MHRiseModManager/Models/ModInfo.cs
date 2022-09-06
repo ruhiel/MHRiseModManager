@@ -127,6 +127,11 @@ namespace MHRiseModManager.Models
                     File.WriteAllBytes(archiveFile, ModFileBinary);
                 }
 
+                if(archiveFile.EndsWith("pak"))
+                {
+                    return archiveFile;
+                }
+
                 var targetDir = Path.Combine(Path.GetDirectoryName(archiveFile), Path.GetFileNameWithoutExtension(archiveFile));
 
                 if (!Directory.Exists(targetDir))
@@ -152,6 +157,11 @@ namespace MHRiseModManager.Models
                 if (item.Name.Equals("dinput8.dll"))
                 {
                     category = Category.REFramework;
+                    break;
+                }
+                if (item.Name.EndsWith("pak"))
+                {
+                    category = Category.Pak;
                     break;
                 }
             }
@@ -240,7 +250,20 @@ namespace MHRiseModManager.Models
 
         private List<ModFileTree> Search(string path)
         {
-            var chiled = new List<ModFileTree>();
+            var child = new List<ModFileTree>();
+
+            if(path.EndsWith("pak"))
+            {
+                FileInfo f = new FileInfo(path);
+                ModFileTree tree = new ModFileTree();
+                tree.Name = f.Name;
+                tree.Path = f.FullName;
+                tree.IsFile = true;
+                child.Add(tree);
+                return child;
+            }
+
+
             var di = new DirectoryInfo(path);
             foreach (var f in di.GetFiles())
             {
@@ -248,7 +271,7 @@ namespace MHRiseModManager.Models
                 tree.Name = f.Name;
                 tree.Path = f.FullName.Substring(ExtractArchivePath.Length + 1);
                 tree.IsFile = true;
-                chiled.Add(tree);
+                child.Add(tree);
             }
 
             foreach (var d in di.GetDirectories())
@@ -258,10 +281,10 @@ namespace MHRiseModManager.Models
                 tree.Path = d.FullName.Substring(ExtractArchivePath.Length + 1);
                 tree.Child = Search(d.FullName);
                 tree.IsFile = false;
-                chiled.Add(tree);
+                child.Add(tree);
             }
 
-            return chiled;
+            return child;
         }
 
 

@@ -643,19 +643,28 @@ namespace MHRiseModManager.ViewModels
                     return;
                 }
 
+                var dropFile = dropFiles[0];
+
                 var dialog = new InstallDialog();
-
-                dialog.ShowDialog();
-
-                var controller = await MahAppsDialogCoordinator.ShowProgressAsync(this, Assembly.GetEntryAssembly().GetName().Name, "Modの新規登録中...");
 
                 var returnModel = dialog.DataContext as InstallDialogViewModel;
 
-                var dropFile = dropFiles[0];
+                returnModel.PakMode.Value = dropFile.EndsWith("pak");
+
+                returnModel.PakFileName.Value = Path.GetFileName(dropFile);
+
+                dialog.ShowDialog();
+
+                if(!returnModel.Result)
+                {
+                    return;
+                }
+
+                var controller = await MahAppsDialogCoordinator.ShowProgressAsync(this, Assembly.GetEntryAssembly().GetName().Name, "Modの新規登録中...");
 
                 var modName = string.IsNullOrEmpty(returnModel.Name.Value) ? null : returnModel.Name.Value;
 
-                await ModRegist(modName: modName, url: returnModel.URL.Value, memo: returnModel.Memo.Value, version: returnModel.Version.Value, dropFile: dropFile);
+                await ModRegist(modName: modName, url: returnModel.URL.Value, memo: returnModel.Memo.Value, version: returnModel.Version.Value, dropFile: dropFile, pakFileName:returnModel.PakFileName.Value);
 
                 Utility.CleanDirectory(Path.Combine(Path.GetTempPath(), Settings.Default.TempDirectoryName));
 
@@ -689,9 +698,9 @@ namespace MHRiseModManager.ViewModels
             _ModListManager.Insert(name: targetFileName, targetFile: targetFile, url: url, memo: memo, modName: modName, version: version);
         }
 
-        private async Task ModRegist(string modName, string url, string memo, string version, string dropFile)
+        private async Task ModRegist(string modName, string url, string memo, string version, string dropFile, string pakFileName = null)
         {
-            dropFile = PreProcess(dropFile);
+            dropFile = PreProcess(dropFile, pakFileName);
 
             if (dropFile == null)
             {
@@ -710,9 +719,19 @@ namespace MHRiseModManager.ViewModels
             _ModListManager.Insert(name: targetFileName, targetFile: targetFile, url: url, memo: memo, modName: modName, version: version);
         }
 
-        private string PreProcess(string dropFile)
+        private string PreProcess(string dropFile, string pakFileName = null)
         {
             var resultFile = dropFile;
+
+            // pakファイル対応
+            if (!string.IsNullOrEmpty(pakFileName))
+            {
+                var dir = Path.GetDirectoryName(dropFile);
+                resultFile = Path.Combine(dir, pakFileName);
+                File.Move(dropFile, resultFile);
+
+                return resultFile;
+            }
 
             var tempDir = Utility.GetOrCreateDirectory(Path.Combine(Path.GetTempPath(), Settings.Default.TempDirectoryName));
 
@@ -880,6 +899,11 @@ namespace MHRiseModManager.ViewModels
 
             dialog.ShowDialog();
 
+            if (!returnModel.Result)
+            {
+                return;
+            }
+
             // アンインストール
             Uninstall(modInfo);
 
@@ -933,6 +957,11 @@ namespace MHRiseModManager.ViewModels
             returnModel.Version.Value = modInfo.Version;
 
             dialog.ShowDialog();
+
+            if (!returnModel.Result)
+            {
+                return;
+            }
 
             _ModListManager.Update(id: modInfo.Id, name: returnModel.Name.Value, url: returnModel.URL.Value, memo: returnModel.Memo.Value, version: returnModel.Version.Value);
 

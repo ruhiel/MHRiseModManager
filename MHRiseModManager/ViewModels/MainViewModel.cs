@@ -821,7 +821,7 @@ namespace MHRiseModManager.ViewModels
 
                 var targetDir = Utility.GetOrCreateDirectory(Path.Combine(Settings.Default.GameDirectoryPath, dir));
 
-                var srcFile = Path.Combine(modInfo.ExtractArchivePath, itemPath);
+                var srcFile = modInfo.Category == Category.Pak ? modInfo.ExtractArchivePath : Path.Combine(modInfo.ExtractArchivePath, itemPath);
 
                 var targetFile = string.Empty;
 

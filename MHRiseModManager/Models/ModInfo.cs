@@ -257,7 +257,7 @@ namespace MHRiseModManager.Models
                 FileInfo f = new FileInfo(path);
                 ModFileTree tree = new ModFileTree();
                 tree.Name = f.Name;
-                tree.Path = f.FullName;
+                tree.Path = f.Name;
                 tree.IsFile = true;
                 child.Add(tree);
                 return child;

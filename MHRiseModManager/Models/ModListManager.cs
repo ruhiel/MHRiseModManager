@@ -241,5 +241,32 @@ namespace MHRiseModManager.Models
 
             return SelectAll().Where(x => x.Id == id).First();
         }
+        public void UpdateArchivePath(int id, string archivefilepath)
+        {
+            // コネクションを開いてテーブル作成して閉じる  
+            using (var con = new SQLiteConnection($"Data Source={Settings.Default.DataBaseFileName}"))
+            {
+                con.Open();
+                string sql = $"update modinfo set archivefilepath = '{archivefilepath}' where id = {id}";
+                var com = new SQLiteCommand(sql, con);
+                com.ExecuteNonQuery();
+
+                con.Close();
+            }
+
+        }
+
+        public void UpdateDetailPath(int id, string path)
+        {
+            using (var con = new SQLiteConnection($"Data Source={Settings.Default.DataBaseFileName}"))
+            {
+                con.Open();
+                string sql = $"update modinfodetail set path = '{path}' where id = {id}";
+                var com = new SQLiteCommand(sql, con);
+                com.ExecuteNonQuery();
+
+                con.Close();
+            }
+        }
     }
 }

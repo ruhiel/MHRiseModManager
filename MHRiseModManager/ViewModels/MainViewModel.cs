@@ -19,11 +19,8 @@ using CsvHelper;
 using System.Globalization;
 using System.Text;
 using CsvHelper.Configuration;
-using System.Net;
-using System.Text.RegularExpressions;
 using System.Net.Http;
 using ControlzEx.Theming;
-using System.Threading;
 
 namespace MHRiseModManager.ViewModels
 {
@@ -91,7 +88,7 @@ namespace MHRiseModManager.ViewModels
                 {
                     _NowSelectModInfo = modInfo;
 
-                    NowModPath.Value = modInfo.Name;
+                    NowModPath.Value = modInfo.ArchiveFilePath;
 
                     NowModSize.Value = modInfo.FileSize;
 
@@ -270,9 +267,9 @@ namespace MHRiseModManager.ViewModels
 
                 Delete(_NowSelectModInfo);
 
-                await MahAppsDialogCoordinator.ShowMessageAsync(this, Assembly.GetEntryAssembly().GetName().Name, "Modの登録を削除しました。");
-
                 ModFileListReflesh();
+
+                await MahAppsDialogCoordinator.ShowMessageAsync(this, Assembly.GetEntryAssembly().GetName().Name, "Modの登録を削除しました。");
             });
             CSVTemplateOutPutCommand.Subscribe(e =>
             {
@@ -377,11 +374,11 @@ namespace MHRiseModManager.ViewModels
                     }
                 });
 
+                ModFileListReflesh();
+
                 await controller.CloseAsync();
 
                 await MahAppsDialogCoordinator.ShowMessageAsync(this, Assembly.GetEntryAssembly().GetName().Name, "Modの登録を削除しました。");
-
-                ModFileListReflesh();
             });
 
             AllInstallCommand.Subscribe(async e =>
@@ -404,11 +401,11 @@ namespace MHRiseModManager.ViewModels
                     }
                 });
 
+                ModFileListReflesh();
+
                 await controller.CloseAsync();
 
                 await MahAppsDialogCoordinator.ShowMessageAsync(this, Assembly.GetEntryAssembly().GetName().Name, "Modを一括インストールしました。");
-
-                ModFileListReflesh();
             });
 
             AllUnInstallCommand.Subscribe(async e =>
@@ -431,11 +428,11 @@ namespace MHRiseModManager.ViewModels
                     }
                 });
 
+                ModFileListReflesh();
+
                 await controller.CloseAsync();
 
                 await MahAppsDialogCoordinator.ShowMessageAsync(this, Assembly.GetEntryAssembly().GetName().Name, "Modを一括アンインストールしました。");
-
-                ModFileListReflesh();
             });
             ShownCommand.Subscribe(async e =>
             {
@@ -955,6 +952,10 @@ namespace MHRiseModManager.ViewModels
             returnModel.Name.Value = modInfo.ModName;
             returnModel.Memo.Value = modInfo.Memo;
             returnModel.Version.Value = modInfo.Version;
+            returnModel.PakMode.Value = modInfo.Category == Category.Pak;
+            returnModel.PakFileName.Value = Path.GetFileName(modInfo.ArchiveFilePath);
+
+            var oldFilePakName = Path.GetFileName(modInfo.ArchiveFilePath);
 
             dialog.ShowDialog();
 
@@ -965,9 +966,39 @@ namespace MHRiseModManager.ViewModels
 
             _ModListManager.Update(id: modInfo.Id, name: returnModel.Name.Value, url: returnModel.URL.Value, memo: returnModel.Memo.Value, version: returnModel.Version.Value);
 
+            if(modInfo.Category == Category.Pak && !oldFilePakName.Equals(returnModel.PakFileName.Value))
+            {
+                RenamePakFile(modInfo, returnModel.PakFileName.Value);
+            }
+
             ModFileListReflesh();
 
             await MahAppsDialogCoordinator.ShowMessageAsync(this, Assembly.GetEntryAssembly().GetName().Name, "Modを更新しました。");
+        }
+
+        private void RenamePakFile(ModInfo modInfo, string newFileName)
+        {
+            var oldArchiveFilePath = modInfo.ArchiveFilePath;
+
+            var detail = _ModListManager.SelectModFile(modInfo.Id).First();
+
+            var oldFileName = detail.Path;
+
+            var gameDir = GameDirectoryPath.Value;
+
+            var newArchiveFilePath = Path.Combine(Path.GetDirectoryName(oldArchiveFilePath), newFileName);
+
+            var newArchiveFullPath = Path.Combine(Environment.CurrentDirectory, newArchiveFilePath);
+
+            var oldArchiveFullPath = Path.Combine(Environment.CurrentDirectory, oldArchiveFilePath);
+
+            File.Move(Path.Combine(gameDir, oldFileName), Path.Combine(gameDir, newFileName));
+
+            File.Move(oldArchiveFullPath, newArchiveFullPath);
+
+            _ModListManager.UpdateDetailPath(detail.Id, newFileName);
+
+            _ModListManager.UpdateArchivePath(modInfo.Id, newArchiveFilePath);
         }
     }
 }

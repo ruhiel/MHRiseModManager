@@ -4,6 +4,7 @@
         xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
         xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
         xmlns:local="clr-namespace:MHRiseModManager.Views"
+        xmlns:controls="clr-namespace:MahApps.Metro.Controls;assembly=MahApps.Metro"
         xmlns:mah="clr-namespace:MahApps.Metro.Controls;assembly=MahApps.Metro"
         xmlns:i="http://schemas.microsoft.com/xaml/behaviors"
         xmlns:rp="clr-namespace:Reactive.Bindings.Interactivity;assembly=ReactiveProperty.WPF"
@@ -38,8 +39,8 @@
                 <RowDefinition Height="50" />
                 <RowDefinition Height="50" />
             </Grid.RowDefinitions>
-            <TextBlock Grid.Row="0" Grid.Column="1" Padding="5" Text="バージョンチェック" Margin="5" VerticalAlignment="Center"/>
-            <CheckBox Grid.Row="0" Grid.Column="2" Margin="5" IsChecked="{Binding StartUpVersionCheck.Value}" HorizontalAlignment="Left" Content="起動時にバージョンチェックを行う"/>
+            <TextBlock Grid.Row="0" Grid.Column="1" Padding="5" Text="起動時のバージョンチェック" Margin="5" VerticalAlignment="Center"/>
+            <controls:ToggleSwitch Grid.Row="0" Grid.Column="2" OnContent="オン" OffContent="オフ" IsOn="{Binding StartUpVersionCheck.Value}"/>
             <TextBlock Grid.Row="1" Grid.Column="1" Padding="5" Text="設定を初期化する" Margin="5" VerticalAlignment="Center"/>
             <Button Grid.Row="1" Grid.Column="2" Margin="5" Content="初期化" Command="{Binding SettingResetCommand}" Width="50" HorizontalAlignment="Left"/>
             <TextBlock Grid.Row="2" Grid.Column="1" Padding="5" Text="モード" Margin="5" VerticalAlignment="Center"/>

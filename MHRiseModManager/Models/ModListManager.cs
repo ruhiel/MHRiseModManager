@@ -125,6 +125,38 @@ namespace MHRiseModManager.Models
             }
         }
 
+        public List<ModInfoDetail> SelectUninstallModFile(int modInfoId)
+        {
+            var list = new List<ModInfoDetail>();
+            using (var con = new SQLiteConnection($"Data Source={Settings.Default.DataBaseFileName}"))
+            {
+                con.Open();
+                var format = @"with checktable as (
+                    select detail.path
+                    from modinfodetail as detail
+                    left join modinfo as info on detail.modinfoid = info.id
+                    where info.status = 1 and detail.modinfoid <> {0}
+                ) select d.* from modinfodetail as d where d.modinfoid = {0} and not exists (select checktable.path from checktable where checktable.path = d.path)";
+
+                var sql = string.Format(format, modInfoId);
+                var com = new SQLiteCommand(sql, con);
+                using (var reader = com.ExecuteReader())
+                {
+                    while (reader.Read())
+                    {
+                        var i = new ModInfoDetail();
+                        i.Id = int.Parse(reader["id"].ToString());
+                        i.ModInfoId = int.Parse(reader["modinfoid"].ToString());
+                        i.Path = DBNull.Value.Equals(reader["path"]) ? null : (string)reader["path"];
+                        i.PakPath = DBNull.Value.Equals(reader["pakpath"]) ? null : (string)reader["pakpath"];
+                        list.Add(i);
+                    }
+                }
+            }
+
+            return list;
+        }
+
         public List<ModInfoDetail> SelectModFile(int modInfoId)
         {
             List<ModInfoDetail> list;

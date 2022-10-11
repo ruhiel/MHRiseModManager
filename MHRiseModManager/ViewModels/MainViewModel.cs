@@ -835,7 +835,7 @@ namespace MHRiseModManager.ViewModels
         private void Uninstall(ModInfo modInfo)
         {
             var set = new HashSet<string>();
-            var list = _ModListManager.SelectModFile(modInfo.Id);
+            var list = _ModListManager.SelectUninstallModFile(modInfo.Id);
             foreach (var item in list)
             {
                 set.Add(Path.GetDirectoryName(item.Path));

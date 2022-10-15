@@ -544,7 +544,7 @@ namespace MHRiseModManager.ViewModels
             var controller = await MahAppsDialogCoordinator.ShowProgressAsync(this, Assembly.GetEntryAssembly().GetName().Name, "Modバージョンチェック中...");
 
             var checkList = new List<Tuple<string, string, string>>();
-            var list = _ModListManager.SelectAll();
+            var list = _ModListManager.SelectAll().Where(x => x.Status == Status.インストール済).ToList();
 
             var i = 1;
             controller.Minimum = i;

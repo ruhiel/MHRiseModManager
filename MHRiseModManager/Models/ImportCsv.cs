@@ -1,23 +1,18 @@
 ﻿using CsvHelper.Configuration.Attributes;
-using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
 
 namespace MHRiseModManager.Models
 {
     public class ImportCsv
     {
-        [Index(0)]
+        [Index(0), Name("名前")]
         public string Name { get; set; }
-        [Index(1)]
+        [Index(1), Name("URL")]
         public string Url { get; set; }
-        [Index(2)]
+        [Index(2), Name("メモ")]
         public string Memo { get; set; }
-        [Index(3)]
+        [Index(3), Name("バージョン")]
         public string Version { get; set; }
-        [Index(4)]
+        [Index(4), Name("ファイルフルパス")]
         public string FullFilePath { get; set; }
     }
 }

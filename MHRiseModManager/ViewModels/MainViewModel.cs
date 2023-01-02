@@ -326,7 +326,7 @@ namespace MHRiseModManager.ViewModels
                     Encoding = Encoding.GetEncoding("Shift_JIS")
                 };
 
-                var records = _ModListManager.SelectAll().Select(x => new CSVRecord() { Name = x.ModName, Url = x.URL, Memo = x.Memo, Version = x.Version });
+                var records = _ModListManager.SelectAll().Select(x => new CSVRecord() { Name = x.ModName, Url = x.URL, Memo = x.Memo, Version = x.Version, Status = x.Status.ToString() });
                 using (var writer = new StreamWriter(filePath, false, Encoding.GetEncoding("Shift_JIS")))
                 {
                     using (var csv = new CsvWriter(writer, config))

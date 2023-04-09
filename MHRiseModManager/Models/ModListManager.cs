@@ -90,7 +90,7 @@ namespace MHRiseModManager.Models
         }
         private ModInfo Find(int id)
         {
-            Func<QueryFactory, ModInfo> action = (db) => db.Query(nameof(ModInfo).ToLower()).Where("id", id).First().Get<ModInfo>();
+            Func<QueryFactory, ModInfo> action = (db) => db.Query(nameof(ModInfo).ToLower()).Where("id", id).First<ModInfo>();
 
             return Execute(action);
         }

@@ -326,7 +326,7 @@ namespace MHRiseModManager.ViewModels
                     Encoding = Encoding.GetEncoding("Shift_JIS")
                 };
 
-                var records = _ModListManager.SelectAll().Select(x => new CSVRecord() { Name = x.ModName, Url = x.URL, Memo = x.Memo, Version = x.Version });
+                var records = _ModListManager.SelectAll().Select(x => new CSVRecord() { Name = x.ModName, Url = x.URL, Memo = x.Memo, Version = x.Version, Status = x.Status.ToString() });
                 using (var writer = new StreamWriter(filePath, false, Encoding.GetEncoding("Shift_JIS")))
                 {
                     using (var csv = new CsvWriter(writer, config))
@@ -544,7 +544,7 @@ namespace MHRiseModManager.ViewModels
             var controller = await MahAppsDialogCoordinator.ShowProgressAsync(this, Assembly.GetEntryAssembly().GetName().Name, "Modバージョンチェック中...");
 
             var checkList = new List<Tuple<string, string, string>>();
-            var list = _ModListManager.SelectAll();
+            var list = _ModListManager.SelectAll().Where(x => x.Status == Status.インストール済).ToList();
 
             var i = 1;
             controller.Minimum = i;

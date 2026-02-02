@@ -6,20 +6,24 @@ using System.Data.Linq;
 using System.Data.SQLite;
 using System.IO;
 using System.Linq;
+using SqlKata;
+using SqlKata.Compilers;
+using SqlKata.Execution;
 
 namespace MHRiseModManager.Models
 {
     public class ModListManager
     {
+        private Compiler _Compiler = new SqliteCompiler();
         public ModListManager()
         {
             if (!File.Exists(Settings.Default.DataBaseFileName))
             {
                 // コネクションを開いてテーブル作成して閉じる  
-                using (var con = new SQLiteConnection($"Data Source={Settings.Default.DataBaseFileName}"))
+                using (var connection = new SQLiteConnection($"Data Source={Settings.Default.DataBaseFileName}"))
                 {
-                    con.Open();
-                    using (SQLiteCommand command = con.CreateCommand())
+                    connection.Open();
+                    using (SQLiteCommand command = connection.CreateCommand())
                     {
                         command.CommandText = "CREATE TABLE IF NOT EXISTS modinfo(" +
                         "id INTEGER PRIMARY KEY AUTOINCREMENT," +
@@ -39,7 +43,7 @@ namespace MHRiseModManager.Models
 
                         command.ExecuteNonQuery();
                     }
-                    using (SQLiteCommand command = con.CreateCommand())
+                    using (SQLiteCommand command = connection.CreateCommand())
                     {
                         command.CommandText = "CREATE TABLE IF NOT EXISTS modinfodetail(" +
                             "id INTEGER PRIMARY KEY AUTOINCREMENT," +
@@ -49,88 +53,87 @@ namespace MHRiseModManager.Models
 
                         command.ExecuteNonQuery();
                     }
-                    con.Close();
                 }
             }
-
         }
-
-        public void Insert(string name, string targetFile, string url, string version, string modName = null, string memo = null, DateTime? dateCreated = null, Status status = Status.未インストール)
+        public int Insert(string name, string targetFile, string url, string version, string modName = null, string memo = null, DateTime? dateCreated = null, Status status = Status.未インストール)
         {
-            var dt = dateCreated ?? DateTime.Now;
-
-            string archiveFilePath = targetFile.Substring(Environment.CurrentDirectory.Length + 1);
-
-            var fileBinaryFrom = File.ReadAllBytes(targetFile);
-
-            var fileSize = fileBinaryFrom.Length;
-
-            var mod = new ModInfo(id: 1, name: name, status: status, fileSize: fileSize, dateCreated: dt, category: Category.Lua, archiveFilePath: archiveFilePath, url: url, memo: memo, modFileBinary:fileBinaryFrom);
-
-            // コネクションを開いてテーブル作成して閉じる  
-            using (var con = new SQLiteConnection($"Data Source={Settings.Default.DataBaseFileName}"))
+            Func<QueryFactory, int> action = (db) =>
             {
-                con.Open();
-                string sql = $"insert into modinfo (name, status, filesize, datecreated, category, archivefilepath, url{(memo == null ? "" : ", memo")}{(modName == null ? "" : ", modname")}{(version == null ? "" : ", version")}, modfilebinary) values ('{name.Replace("'", "''")}', {(int)status}, {fileSize}, '{dt.ToString("yyyy-MM-dd HH:mm:ss")}', {(int)mod.GetNewCategory()}, '{archiveFilePath.Replace("'", "''")}', '{url}'{(memo == null ? "" : ", '" + memo + "'")}{(modName == null ? "" : ", '" + modName + "'")}{(version == null ? "" : ", '" + version + "'")}, @file_binary);";
-                SQLiteCommand com = new SQLiteCommand(sql, con);
-                com.Parameters.Add("@file_binary", DbType.Binary).Value = fileBinaryFrom;
-                com.ExecuteNonQuery();
+                var dt = dateCreated ?? DateTime.Now;
 
-                con.Close();
-            }
+                string archiveFilePath = targetFile.Substring(Environment.CurrentDirectory.Length + 1);
+
+                var fileBinaryFrom = File.ReadAllBytes(targetFile);
+
+                var fileSize = fileBinaryFrom.Length;
+
+                var mod = new ModInfo(id: 1, name: name, status: status, fileSize: fileSize, dateCreated: dt, category: Category.Lua, archiveFilePath: archiveFilePath, url: url, memo: memo, modFileBinary: fileBinaryFrom);
+
+                return db.Query(nameof(ModInfo).ToLower()).Insert(new
+                {
+                    name = name.Replace("'", "''"),
+                    status = (int)status,
+                    filesize = fileSize,
+                    datecreated = dt.ToString("yyyy-MM-dd HH:mm:ss"),
+                    category = (int)mod.GetNewCategory(),
+                    archivefilepath = archiveFilePath.Replace("'", "''"),
+                    url = url,
+                    memo = (memo == null ? "" : memo),
+                    modname = (modName == null ? "" : modName),
+                    version = (version == null ? "" : version),
+                    modfilebinary = fileBinaryFrom,
+                });
+            };
+
+            return Execute(action);
         }
+        private ModInfo Find(int id)
+        {
+            Func<QueryFactory, ModInfo> action = (db) => db.Query(nameof(ModInfo).ToLower()).Where("id", id).First<ModInfo>();
 
+            return Execute(action);
+        }
         public List<ModInfo> SelectAll()
         {
-            List<ModInfo> list;
-            using (var con = new SQLiteConnection($"Data Source={Settings.Default.DataBaseFileName}"))
-            {
-                con.Open();
-                using (var context = new DataContext(con))
-                {
-                    var table = context.GetTable<ModInfo>();
-                    list = table.ToList();
-                }
-                con.Close();
-            }
+            Func<QueryFactory, List<ModInfo>> action = (db) => db.Query(nameof(ModInfo).ToLower()).Get<ModInfo>().ToList();
 
-            return list;
+            return Execute(action);
         }
-
         public void Install(int id, IEnumerable<string> files, Category? category = null)
         {
-            // コネクションを開いてテーブル作成して閉じる  
-            using (var con = new SQLiteConnection($"Data Source={Settings.Default.DataBaseFileName}"))
+            Action<QueryFactory, SQLiteConnection> action = (db, connection) =>
             {
-                con.Open();
-                string sql = $"update modinfo set status = {(int)Status.インストール済} where id = {id}";
-                SQLiteCommand com = new SQLiteCommand(sql, con);
-                com.ExecuteNonQuery();
+                db.Query(nameof(ModInfo).ToLower()).Where("id", id).Update(new
+                {
+                    status = (int)Status.インストール済
+                });
 
                 foreach (var file in files)
                 {
-                    sql = $"select count(*) from modinfodetail where modinfoid = {id} and path = '{file}'";
-                    com = new SQLiteCommand(sql, con);
+                    var sql = $"select count(*) from modinfodetail where modinfoid = {id} and path = '{file}'";
+                    var com = new SQLiteCommand(sql, connection);
                     var record = (long)com.ExecuteScalar();
 
-                    if(record == 0)
+                    if (record == 0)
                     {
-                        sql = $"insert into modinfodetail (modinfoid, path) values ({id}, '{file}')";
-                        com = new SQLiteCommand(sql, con);
-                        com.ExecuteNonQuery();
+                        db.Query(nameof(ModInfoDetail).ToLower()).Insert(new
+                        {
+                            modinfoid = id,
+                            path = file,
+                        });
                     }
                 }
+            };
 
-                con.Close();
-            }
+            Execute(action);
         }
-
         public List<ModInfoDetail> SelectUninstallModFile(int modInfoId)
         {
             var list = new List<ModInfoDetail>();
-            using (var con = new SQLiteConnection($"Data Source={Settings.Default.DataBaseFileName}"))
+            using (var connection = new SQLiteConnection($"Data Source={Settings.Default.DataBaseFileName}"))
             {
-                con.Open();
+                connection.Open();
                 var format = @"with checktable as (
                     select detail.path
                     from modinfodetail as detail
@@ -139,7 +142,7 @@ namespace MHRiseModManager.Models
                 ) select d.* from modinfodetail as d where d.modinfoid = {0} and not exists (select checktable.path from checktable where checktable.path = d.path)";
 
                 var sql = string.Format(format, modInfoId);
-                var com = new SQLiteCommand(sql, con);
+                var com = new SQLiteCommand(sql, connection);
                 using (var reader = com.ExecuteReader())
                 {
                     while (reader.Read())
@@ -156,148 +159,149 @@ namespace MHRiseModManager.Models
 
             return list;
         }
-
         public List<ModInfoDetail> SelectModFile(int modInfoId)
         {
-            List<ModInfoDetail> list;
-            using (var con = new SQLiteConnection($"Data Source={Settings.Default.DataBaseFileName}"))
-            {
-                con.Open();
-                using (var context = new DataContext(con))
-                {
-                    var table = context.GetTable<ModInfoDetail>();
-                    list = table.ToList().Where(x => x.ModInfoId == modInfoId).ToList();
-                }
-                con.Close();
-            }
+            Func<QueryFactory, List<ModInfoDetail>> action = (db) => db.Query(nameof(ModInfoDetail).ToLower()).Where("modinfoid", modInfoId).Get<ModInfoDetail>().ToList();
 
-            return list;
+            return Execute(action);
         }
-
-        public void UpdateStatus(int id, Status status, Category? category = null)
+        public int UpdateStatus(int id, Status status, Category? category = null)
         {
-            // コネクションを開いてテーブル作成して閉じる  
-            using (var con = new SQLiteConnection($"Data Source={Settings.Default.DataBaseFileName}"))
-            {
-                con.Open();
-                string sql = $"update modinfo set status = {(int)status} where id = {id}";
-                SQLiteCommand com = new SQLiteCommand(sql, con);
-                com.ExecuteNonQuery();
+            Func<QueryFactory, int> action = (db) => db.Query(nameof(ModInfo).ToLower()).Where("id", id).Update(new { status = (int)status });
 
-                con.Close();
-            }
+            return Execute(action);
         }
-
         public void Delete(int id)
         {
-            // コネクションを開いてテーブル作成して閉じる  
-            using (var con = new SQLiteConnection($"Data Source={Settings.Default.DataBaseFileName}"))
+            Action<QueryFactory> action = (db) =>
             {
-                con.Open();
-                var sql = $"delete from modinfodetail where modinfoid = {id}";
-                var com = new SQLiteCommand(sql, con);
-                com.ExecuteNonQuery();
+                db.Query(nameof(ModInfoDetail).ToLower()).Where("modinfoid", id).Delete();
 
-                sql = $"delete from modinfo where id = {id}";
-                com = new SQLiteCommand(sql, con);
-                com.ExecuteNonQuery();
+                db.Query(nameof(ModInfo).ToLower()).Where("id", id).Delete();
+            };
 
-                con.Close();
-            }
+            Execute(action);
         }
-        public void DeleteDetail(int id)
+        public int DeleteDetail(int id)
         {
-            // コネクションを開いてテーブル作成して閉じる  
-            using (var con = new SQLiteConnection($"Data Source={Settings.Default.DataBaseFileName}"))
-            {
-                con.Open();
-                var sql = $"delete from modinfodetail where modinfoid = {id}";
-                var com = new SQLiteCommand(sql, con);
-                com.ExecuteNonQuery();
+            Func<QueryFactory, int> action = (db) => db.Query(nameof(ModInfoDetail).ToLower()).Where("modinfoid", id).Delete();
 
-                con.Close();
-            }
+            return Execute(action);
         }
 
         public ModInfo Update(int id, string targetFile)
         {
-            string archiveFilePath = targetFile.Substring(Environment.CurrentDirectory.Length + 1);
-
-            var fileBinaryFrom = File.ReadAllBytes(targetFile);
-
-            var fileSize = fileBinaryFrom.Length;
-
-            // コネクションを開いてテーブル作成して閉じる  
-            using (var con = new SQLiteConnection($"Data Source={Settings.Default.DataBaseFileName}"))
+            Func<QueryFactory, ModInfo> action = (db) =>
             {
-                con.Open();
-                string sql = $"update modinfo set name = '{Path.GetFileName(archiveFilePath)}', filesize = {(int)fileSize}, archivefilepath = '{archiveFilePath}', modfilebinary = @file_binary where id = {id}";
-                var com = new SQLiteCommand(sql, con);
-                com.Parameters.Add("@file_binary", DbType.Binary).Value = fileBinaryFrom;
-                com.ExecuteNonQuery();
+                string archiveFilePath = targetFile.Substring(Environment.CurrentDirectory.Length + 1);
 
-                con.Close();
-            }
+                var fileBinaryFrom = File.ReadAllBytes(targetFile);
 
-            return SelectAll().Where(x => x.Id == id).First();
+                var fileSize = fileBinaryFrom.Length;
+
+                db.Query(nameof(ModInfo).ToLower()).Where("id", id).Update(new
+                {
+                    name = Path.GetFileName(archiveFilePath),
+                    filesize = fileSize,
+                    archivefilepath = archiveFilePath,
+                    modfilebinary = fileBinaryFrom,
+                });
+
+                return Find(id);
+            };
+
+            return Execute(action);
         }
 
         public ModInfo Update(int id, string name, string url, string memo, string version)
         {
-            // コネクションを開いてテーブル作成して閉じる  
-            using (var con = new SQLiteConnection($"Data Source={Settings.Default.DataBaseFileName}"))
+            Func<QueryFactory, ModInfo> action = (db) =>
             {
-                con.Open();
-                string sql = $"update modinfo set modname = '{name}', url = '{url}', memo = '{memo}', version = '{version}' where id = {id}";
-                var com = new SQLiteCommand(sql, con);
-                com.ExecuteNonQuery();
+                db.Query(nameof(ModInfo).ToLower()).Where("id", id).Update(new
+                {
+                    modname = name,
+                    url = url,
+                    memo = memo,
+                    version = version,
+                });
 
-                con.Close();
-            }
+                return Find(id);
+            };
 
-            return SelectAll().Where(x => x.Id == id).First();
+            return Execute(action);
         }
 
         public ModInfo UpdateLatestVersion(int id, string latestversion)
         {
-            // コネクションを開いてテーブル作成して閉じる  
-            using (var con = new SQLiteConnection($"Data Source={Settings.Default.DataBaseFileName}"))
+            Func<QueryFactory, ModInfo> action = (db) =>
             {
-                con.Open();
-                string sql = $"update modinfo set latestversion = '{latestversion}' where id = {id}";
-                var com = new SQLiteCommand(sql, con);
-                com.ExecuteNonQuery();
+                db.Query(nameof(ModInfo).ToLower()).Where("id", id).Update(new
+                {
+                    latestversion = latestversion,
+                });
 
-                con.Close();
-            }
+                return Find(id);
+            };
 
-            return SelectAll().Where(x => x.Id == id).First();
+            return Execute(action);
         }
+
         public void UpdateArchivePath(int id, string archivefilepath)
         {
-            // コネクションを開いてテーブル作成して閉じる  
-            using (var con = new SQLiteConnection($"Data Source={Settings.Default.DataBaseFileName}"))
+            Action<QueryFactory> action = (db) =>
             {
-                con.Open();
-                string sql = $"update modinfo set archivefilepath = '{archivefilepath}' where id = {id}";
-                var com = new SQLiteCommand(sql, con);
-                com.ExecuteNonQuery();
+                db.Query(nameof(ModInfo).ToLower()).Where("id", id).Update(new
+                {
+                    archivefilepath = archivefilepath,
+                });
+            };
 
-                con.Close();
-            }
-
+            Execute(action);
         }
 
         public void UpdateDetailPath(int id, string path)
         {
-            using (var con = new SQLiteConnection($"Data Source={Settings.Default.DataBaseFileName}"))
+            Action<QueryFactory> action = (db) =>
             {
-                con.Open();
-                string sql = $"update modinfodetail set path = '{path}' where id = {id}";
-                var com = new SQLiteCommand(sql, con);
-                com.ExecuteNonQuery();
+                db.Query(nameof(ModInfoDetail).ToLower()).Where("id", id).Update(new
+                {
+                    path = path,
+                });
+            };
 
-                con.Close();
+            Execute(action);
+        }
+        private void Execute(Action<QueryFactory> action)
+        {
+            // コネクションを開いて実行
+            using (var connection = new SQLiteConnection($"Data Source={Settings.Default.DataBaseFileName}"))
+            {
+                connection.Open();
+                var db = new QueryFactory(connection, _Compiler);
+
+                action.Invoke(db);
+            }
+        }
+        private Type Execute<Type>(Func<QueryFactory, Type> action)
+        {
+            // コネクションを開いて実行
+            using (var connection = new SQLiteConnection($"Data Source={Settings.Default.DataBaseFileName}"))
+            {
+                connection.Open();
+                var db = new QueryFactory(connection, _Compiler);
+
+                return action.Invoke(db);
+            }
+        }
+        private void Execute(Action<QueryFactory, SQLiteConnection> action)
+        {
+            // コネクションを開いて実行
+            using (var connection = new SQLiteConnection($"Data Source={Settings.Default.DataBaseFileName}"))
+            {
+                connection.Open();
+                var db = new QueryFactory(connection, _Compiler);
+
+                action.Invoke(db, connection);
             }
         }
     }

@@ -156,7 +156,7 @@ namespace MHRiseModManager.Models
                 }
                 if (item.Name.Equals("dinput8.dll"))
                 {
-                    category = Category.REFramework;
+                    category = Category.DLL;
                     break;
                 }
                 if (item.Name.EndsWith("pak"))

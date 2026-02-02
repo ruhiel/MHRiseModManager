@@ -258,7 +258,7 @@ namespace MHRiseModManager.ViewModels
                     ColorScheme = MetroDialogColorScheme.Theme,
                 };
 
-                var diagResult = await MahAppsDialogCoordinator.ShowMessageAsync(this, Assembly.GetEntryAssembly().GetName().Name, "Modの登録を削除します。よろしいですか？", MessageDialogStyle.AffirmativeAndNegative, metroDialogSettings);
+                var diagResult = await MahAppsDialogCoordinator.ShowMessageAsync(this, Assembly.GetEntryAssembly().GetName().Name, $"「{_NowSelectModInfo.ModName}」の登録を削除します。よろしいですか？", MessageDialogStyle.AffirmativeAndNegative, metroDialogSettings);
 
                 if (MessageDialogResult.Negative == diagResult)
                 {
@@ -269,7 +269,7 @@ namespace MHRiseModManager.ViewModels
 
                 ModFileListReflesh();
 
-                await MahAppsDialogCoordinator.ShowMessageAsync(this, Assembly.GetEntryAssembly().GetName().Name, "Modの登録を削除しました。");
+                await MahAppsDialogCoordinator.ShowMessageAsync(this, Assembly.GetEntryAssembly().GetName().Name, $"「{_NowSelectModInfo.ModName}」の登録を削除しました。");
             });
             CSVTemplateOutPutCommand.Subscribe(e =>
             {
